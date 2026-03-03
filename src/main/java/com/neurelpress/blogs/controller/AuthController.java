@@ -3,6 +3,8 @@ package com.neurelpress.blogs.controller;
 import com.neurelpress.blogs.constants.ApiConstants;
 import com.neurelpress.blogs.constants.CodeConstants;
 import com.neurelpress.blogs.dto.request.LoginRequest;
+import com.neurelpress.blogs.dto.request.OtpLoginRequest;
+import com.neurelpress.blogs.dto.request.OtpRequest;
 import com.neurelpress.blogs.dto.request.RefreshTokenRequest;
 import com.neurelpress.blogs.dto.request.RegisterRequest;
 import com.neurelpress.blogs.dto.response.AuthResponse;
@@ -67,6 +69,9 @@ public class AuthController {
     @GetMapping(ApiConstants.Me)
     @Operation(summary = "Get current authenticated user")
     public ResponseEntity<UserResponse> getCurrentUser(@AuthenticationPrincipal UserPrincipal principal) {
+        if (principal == null) {
+            throw new com.neurelpress.blogs.exception.UnauthorizedException("Unauthorized");
+        }
         log.info("Getting current user: {}", principal.getId());
         return ResponseEntity.ok(authService.getCurrentUser(principal.getId()));
     }
@@ -90,5 +95,20 @@ public class AuthController {
         authService.resendVerificationEmail(principal.getId());
         log.info("Verification email resent: {}", principal.getId());
         return ResponseEntity.ok(Map.of(CodeConstants.MESSAGE, CodeConstants.EMAIL_VERIFICATION_SENT));
+    }
+
+    @PostMapping(ApiConstants.Request_Otp)
+    @Operation(summary = "Request a login OTP to be sent to email")
+    public ResponseEntity<Map<String, String>> requestOtp(@Valid @RequestBody OtpRequest request) {
+        authService.requestLoginOtp(request);
+        log.info("Requested OTP For Login");
+        return ResponseEntity.ok(Map.of(CodeConstants.MESSAGE, "OTP sent if email exists"));
+    }
+
+    @PostMapping(ApiConstants.Login_Otp)
+    @Operation(summary = "Login with email and OTP")
+    public ResponseEntity<AuthResponse> loginWithOtp(@Valid @RequestBody OtpLoginRequest request) {
+        log.info("Logged with OTP: {}", request);
+        return ResponseEntity.ok(authService.loginWithOtp(request));
     }
 }

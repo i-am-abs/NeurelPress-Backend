@@ -2,10 +2,13 @@ package com.neurelpress.blogs.service.impl;
 
 import com.neurelpress.blogs.constants.CodeConstants;
 import com.neurelpress.blogs.dto.request.LoginRequest;
+import com.neurelpress.blogs.dto.request.OtpLoginRequest;
+import com.neurelpress.blogs.dto.request.OtpRequest;
 import com.neurelpress.blogs.dto.request.RefreshTokenRequest;
 import com.neurelpress.blogs.dto.request.RegisterRequest;
 import com.neurelpress.blogs.dto.response.AuthResponse;
 import com.neurelpress.blogs.dto.response.UserResponse;
+import com.neurelpress.blogs.dao.EmailOtp;
 import com.neurelpress.blogs.dao.EmailVerificationToken;
 import com.neurelpress.blogs.dao.RefreshToken;
 import com.neurelpress.blogs.dao.User;
@@ -14,6 +17,7 @@ import com.neurelpress.blogs.exception.DuplicateResourceException;
 import com.neurelpress.blogs.exception.ResourceNotFoundException;
 import com.neurelpress.blogs.exception.UnauthorizedException;
 import com.neurelpress.blogs.mapper.UserMapper;
+import com.neurelpress.blogs.repository.EmailOtpRepository;
 import com.neurelpress.blogs.repository.EmailVerificationTokenRepository;
 import com.neurelpress.blogs.repository.RefreshTokenRepository;
 import com.neurelpress.blogs.repository.UserRepository;
@@ -29,6 +33,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 
 @Slf4j
 @Service
@@ -39,6 +44,7 @@ public class AuthServiceImpl implements AuthService {
     private final UserRepository userRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final EmailVerificationTokenRepository emailVerificationTokenRepository;
+    private final EmailOtpRepository emailOtpRepository;
     private final EmailService emailService;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider tokenProvider;
@@ -71,6 +77,7 @@ public class AuthServiceImpl implements AuthService {
                 .user(user)
                 .expiresAt(Instant.now().plusSeconds(CodeConstants.EMAIL_VERIFICATION_EXPIRE_HOURS * 3600L))
                 .build();
+
         emailVerificationTokenRepository.save(evToken);
         emailService.sendVerificationEmail(user.getEmail(), user.getDisplayName(), token);
 
@@ -168,15 +175,61 @@ public class AuthServiceImpl implements AuthService {
         }
 
         emailVerificationTokenRepository.deleteByUserIdOrExpired(userId, Instant.now());
+
         String token = SecureTokenGenerator.generateHexToken();
         EmailVerificationToken evToken = EmailVerificationToken.builder()
                 .token(token)
                 .user(user)
                 .expiresAt(Instant.now().plusSeconds(CodeConstants.EMAIL_VERIFICATION_EXPIRE_HOURS * 3600L))
                 .build();
+
         emailVerificationTokenRepository.save(evToken);
         emailService.sendVerificationEmail(user.getEmail(), user.getDisplayName(), token);
         log.info("Verification email resent: {}", user.getEmail());
+    }
+
+    @Override
+    @Transactional
+    public void requestLoginOtp(OtpRequest request) {
+        User user = userRepository.findByEmail(request.email())
+                .orElseThrow(() -> new ResourceNotFoundException(CodeConstants.USER, CodeConstants.Email, request.email()));
+
+        if (user.getProvider() != AuthProvider.LOCAL) {
+            throw new UnauthorizedException("OTP login is only available for email/password accounts");
+        }
+
+        emailOtpRepository.deleteByUserIdOrExpired(user.getId(), Instant.now());
+
+        String code = String.format("%06d", ThreadLocalRandom.current().nextInt(0, 1_000_000));
+        EmailOtp otp = EmailOtp.builder()
+                .user(user)
+                .code(code)
+                .expiresAt(Instant.now().plusSeconds(600))
+                .build();
+        emailOtpRepository.save(otp);
+        emailService.sendLoginOtpEmail(user.getEmail(), user.getDisplayName(), code);
+    }
+
+    @Override
+    @Transactional
+    public AuthResponse loginWithOtp(OtpLoginRequest request) {
+        EmailOtp otp = emailOtpRepository.findActiveByEmailAndCode(request.email(), request.otp())
+                .orElseThrow(() -> new UnauthorizedException("Invalid or expired OTP"));
+
+        if (otp.getExpiresAt().isBefore(Instant.now())) {
+            throw new UnauthorizedException("Invalid or expired OTP");
+        }
+
+        User user = otp.getUser();
+        user.setVerified(true);
+        userRepository.save(user);
+
+        otp.setUsed(true);
+        emailOtpRepository.save(otp);
+        emailOtpRepository.deleteByUserIdOrExpired(user.getId(), Instant.now());
+
+        log.info("User logged in with OTP: {}", user.getEmail());
+        return buildAuthResponse(user);
     }
 
     private AuthResponse buildAuthResponse(User user) {

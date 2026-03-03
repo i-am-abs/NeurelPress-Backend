@@ -12,13 +12,14 @@ public record UserResponse(
         String bio,
         String avatarUrl,
         String role,
+
         boolean githubUrl,
+
         int linkedinUrl,
         int websiteUrl,
 
         String followersCount,
         String followingCount,
-
         String verified,
 
         Instant createdAt

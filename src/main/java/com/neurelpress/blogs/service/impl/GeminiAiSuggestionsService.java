@@ -31,7 +31,8 @@ public class GeminiAiSuggestionsService implements AiSuggestionsService {
 
     @Override
     public List<String> suggestTags(String title, String contentSnippet) {
-        if (isConfigured()) {
+        if (!isConfigured()) {
+            log.warn("Gemini API key is not configured; skipping tag suggestions.");
             return Collections.emptyList();
         }
 
@@ -54,7 +55,8 @@ public class GeminiAiSuggestionsService implements AiSuggestionsService {
 
     @Override
     public String suggestTitle(String contentSnippet) {
-        if (isConfigured()) {
+        if (!isConfigured()) {
+            log.warn("Gemini API key is not configured; skipping title suggestion.");
             return null;
         }
 
@@ -74,7 +76,8 @@ public class GeminiAiSuggestionsService implements AiSuggestionsService {
 
     @Override
     public String summarize(String contentSnippet) {
-        if (isConfigured()) {
+        if (!isConfigured()) {
+            log.warn("Gemini API key is not configured; skipping summary suggestion.");
             return null;
         }
 
@@ -93,7 +96,7 @@ public class GeminiAiSuggestionsService implements AiSuggestionsService {
     }
 
     private boolean isConfigured() {
-        return apiKey == null || apiKey.isBlank();
+        return apiKey != null && !apiKey.isBlank();
     }
 
     @SuppressWarnings("unchecked")

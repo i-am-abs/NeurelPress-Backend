@@ -3,6 +3,7 @@ package com.neurelpress.blogs.controller;
 import com.neurelpress.blogs.constants.ApiConstants;
 import com.neurelpress.blogs.constants.CodeConstants;
 import com.neurelpress.blogs.dto.response.UserResponse;
+import com.neurelpress.blogs.dto.response.PageResponse;
 import com.neurelpress.blogs.security.UserPrincipal;
 import com.neurelpress.blogs.service.FollowService;
 import com.neurelpress.blogs.service.UserService;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
@@ -38,6 +40,17 @@ public class UserController {
     public ResponseEntity<UserResponse> getProfile(@PathVariable String username) {
         log.info("Getting profile for user: {}", username);
         return ResponseEntity.ok(userService.getProfileByUsername(username));
+    }
+
+    @GetMapping(ApiConstants.Search)
+    @Operation(summary = "Search users by username or display name")
+    public ResponseEntity<PageResponse<UserResponse>> searchUsers(
+            @RequestParam String query,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "12") int size
+    ) {
+        log.info("Searching users with query: {}, page: {}, size: {}", query, page, size);
+        return ResponseEntity.ok(userService.searchUsers(query, page, size));
     }
 
     @PatchMapping(ApiConstants.Me_Profile)

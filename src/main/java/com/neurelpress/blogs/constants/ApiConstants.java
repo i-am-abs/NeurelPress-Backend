@@ -17,7 +17,7 @@ public final class ApiConstants {
 
     public static final String Auth_Callback = "/auth/callback";
 
-    public static final String Suggested_Tags ="/suggest-tags";
+    public static final String Suggested_Tags = "/suggest-tags";
     public static final String Suggested_Title = "/suggest-title";
     public static final String Suggested_Summary = "/suggest-summary";
 
@@ -31,6 +31,9 @@ public final class ApiConstants {
     public static final String Top = "/top";
     public static final String Verify_Email = "/verify-email";
     public static final String Resend_Verification_Email = "/resend-verification-email";
+
+    public static final String Request_Otp = "/request-otp";
+    public static final String Login_Otp = "/login-otp";
 
     public static final String Search = "/search";
     public static final String Really_Simple_Syndication = "/rss";

@@ -2,18 +2,22 @@ package com.neurelpress.blogs.service.impl;
 
 import com.neurelpress.blogs.constants.CodeConstants;
 import com.neurelpress.blogs.dto.response.UserResponse;
+import com.neurelpress.blogs.dto.response.PageResponse;
 import com.neurelpress.blogs.dao.User;
 import com.neurelpress.blogs.exception.ResourceNotFoundException;
 import com.neurelpress.blogs.mapper.UserMapper;
 import com.neurelpress.blogs.repository.ArticleRepository;
 import com.neurelpress.blogs.repository.UserRepository;
 import com.neurelpress.blogs.service.UserService;
+import com.neurelpress.blogs.utils.PageResponseSupport;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 @Slf4j
 @Service
@@ -69,5 +73,13 @@ public class UserServiceImpl implements UserService {
     public long getPublishedArticleCount(UUID userId) {
         log.info("Getting published article count for user: {}", userId);
         return articleRepository.countPublishedByAuthor(userId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PageResponse<UserResponse> searchUsers(String query, int page, int size) {
+        log.info("Searching users with query: {} (page {}, size {})", query, page, size);
+        Page<User> p = userRepository.search(query, Pageable.ofSize(size).withPage(page));
+        return PageResponseSupport.from(p, userMapper::toResponse);
     }
 }

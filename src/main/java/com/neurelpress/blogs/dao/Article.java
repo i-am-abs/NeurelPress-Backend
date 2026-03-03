@@ -1,25 +1,25 @@
 package com.neurelpress.blogs.dao;
 
 import com.neurelpress.blogs.constants.enums.ArticleStatus;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
+import jakarta.persistence.Index;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Index;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.JoinTable;
-import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
-import jakarta.persistence.Column;
-import lombok.Getter;
-import lombok.Setter;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.ManyToMany;
+import jakarta.persistence.JoinTable;
 import lombok.AllArgsConstructor;
+import lombok.Getter;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -39,7 +39,8 @@ import java.util.UUID;
                 @Index(name = "idx_article_status",
                         columnList = "status"),
                 @Index(name = "idx_article_author_status",
-                        columnList = "author_id, status")})
+                        columnList = "author_id, status")
+        })
 @Getter
 @Setter
 @NoArgsConstructor

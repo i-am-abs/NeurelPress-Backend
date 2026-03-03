@@ -45,7 +45,9 @@ public class JwtTokenProvider {
     public String generateAccessToken(UUID userId, String email, String role) {
         Date now = new Date();
         Date expiry = new Date(now.getTime() + accessExpirationMs);
-        log.info("Generating JWT token for user: {}, email: {}, role: {}, expiry: {}", userId, email, role, expiry);
+        log.info("Generating JWT token for user: {}, email: {}, role: {}, expiry: {}",
+                userId, email, role, expiry);
+
         return Jwts.builder()
                 .subject(userId.toString())
                 .claim("email", email)

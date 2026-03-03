@@ -10,8 +10,8 @@ public record BookResponse(
         String description,
         String coverUrl,
         String category,
-        double affiliateUrl,
 
+        double affiliateUrl,
         double rating,
 
         String referencedCount

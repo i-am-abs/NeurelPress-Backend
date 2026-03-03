@@ -1,6 +1,6 @@
 package com.neurelpress.blogs.dao;
 
-import jakarta.persistence.UniqueConstraint;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Index;
 import jakarta.persistence.Id;
@@ -22,16 +22,10 @@ import java.util.UUID;
 
 @Entity
 @Table(
-        name = "follows",
-        uniqueConstraints = {
-                @UniqueConstraint(
-                        name = "uk_follow_follower_following",
-                        columnNames = {"follower_id", "following_id"}
-                )
-        },
+        name = "email_otps",
         indexes = {
-                @Index(name = "idx_follow_follower", columnList = "follower_id"),
-                @Index(name = "idx_follow_following", columnList = "following_id")
+                @Index(name = "idx_email_otp_user", columnList = "user_id"),
+                @Index(name = "idx_email_otp_code", columnList = "code")
         }
 )
 @Getter
@@ -39,20 +33,27 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Follow {
+public class EmailOtp {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "follower_id", nullable = false)
-    private User follower;
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "following_id", nullable = false)
-    private User following;
+    @Column(nullable = false, length = 6)
+    private String code;
+
+    @Column(nullable = false)
+    private Instant expiresAt;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean used = false;
 
     @CreationTimestamp
     private Instant createdAt;
 }
+

@@ -17,13 +17,18 @@ public final class SlugUtils {
 
         String normalized = Normalizer.normalize(input, Normalizer.Form.NFD);
         log.info("Normalized input: {}", normalized);
-        return normalized
+        String slug = normalized
                 .replaceAll("[^\\p{ASCII}]", "")
                 .toLowerCase(Locale.ROOT)
                 .replaceAll("[^a-z0-9\\s-]", "")
                 .replaceAll("[\\s]+", "-")
                 .replaceAll("-{2,}", "-")
-                .replaceAll("^-|-$", "")
-                .substring(0, Math.min(normalized.length(), 200));
+                .replaceAll("^-|-$", "");
+
+        if (slug.length() > 200) {
+            slug = slug.substring(0, 200);
+        }
+
+        return slug;
     }
 }

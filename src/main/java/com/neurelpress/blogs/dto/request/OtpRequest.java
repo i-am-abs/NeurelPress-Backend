@@ -1,8 +1,10 @@
 package com.neurelpress.blogs.dto.request;
 
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 
-public record RefreshTokenRequest(
+public record OtpRequest(
         @NotBlank
-        String refreshToken
+        @Email
+        String email
 ) {}

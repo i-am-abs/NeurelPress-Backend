@@ -66,7 +66,7 @@ public class ArticleServiceImpl implements ArticleService {
                 .summary(request.summary())
                 .content(request.content())
                 .coverImage(request.coverImage())
-                .status(ArticleStatus.valueOf(ArticleStatus.DRAFT.getArticleStatus()))
+                .status(ArticleStatus.DRAFT)
                 .readTime(readTime)
                 .seoTitle(request.seoTitle())
                 .seoDescription(request.seoDescription())
@@ -125,7 +125,6 @@ public class ArticleServiceImpl implements ArticleService {
     public ArticleResponse getArticleBySlug(String slug) {
         Article article = articleRepository.findPublishedBySlug(slug)
                 .orElseThrow(() -> new ResourceNotFoundException(CodeConstants.Article, CodeConstants.SLUG, slug));
-        articleRepository.incrementViews(article.getId());
         log.info("Article viewed: {}", slug);
         return articleMapper.toResponse(article);
     }
@@ -159,7 +158,7 @@ public class ArticleServiceImpl implements ArticleService {
     @Transactional(readOnly = true)
     public PageResponse<ArticleSummaryResponse> getArticlesByAuthor(UUID authorId, int page, int size) {
         Page<Article> p = articleRepository.findByAuthorIdAndStatusOrderByCreatedAtDesc(
-                authorId, ArticleStatus.valueOf(ArticleStatus.PUBLISHED.getArticleStatus()), Pageable.ofSize(size).withPage(page));
+                authorId, ArticleStatus.PUBLISHED, Pageable.ofSize(size).withPage(page));
         log.info("Getting articles by author {} with page {} and size {}", authorId, page, size);
         return PageResponseSupport.from(p, articleMapper::toSummaryResponse);
     }
@@ -168,8 +167,7 @@ public class ArticleServiceImpl implements ArticleService {
     @Transactional(readOnly = true)
     public PageResponse<ArticleSummaryResponse> getDraftsByAuthor(UUID authorId, int page, int size) {
         Page<Article> p = articleRepository.findByAuthorIdAndStatusOrderByCreatedAtDesc(
-                authorId, ArticleStatus.valueOf(ArticleStatus.DRAFT.getArticleStatus()),
-                Pageable.ofSize(size).withPage(page));
+                authorId, ArticleStatus.DRAFT, Pageable.ofSize(size).withPage(page));
         log.info("Getting drafts by author {} with page {} and size {}", authorId, page, size);
         return PageResponseSupport.from(p, articleMapper::toSummaryResponse);
     }

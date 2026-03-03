@@ -2,6 +2,7 @@ package com.neurelpress.blogs.service;
 
 
 import com.neurelpress.blogs.dto.response.UserResponse;
+import com.neurelpress.blogs.dto.response.PageResponse;
 
 import java.util.UUID;
 
@@ -14,4 +15,6 @@ public interface UserService {
                               String linkedinUrl, String websiteUrl);
 
     long getPublishedArticleCount(UUID userId);
+
+    PageResponse<UserResponse> searchUsers(String query, int page, int size);
 }

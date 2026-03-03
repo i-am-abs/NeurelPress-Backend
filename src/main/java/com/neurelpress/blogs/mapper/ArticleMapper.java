@@ -24,6 +24,7 @@ public class ArticleMapper {
 
     public ArticleResponse toResponse(Article article) {
         log.info("ArticleMapper.toResponse: {}", article);
+
         return new ArticleResponse(
                 article.getId(),
                 article.getTitle(),
@@ -51,6 +52,7 @@ public class ArticleMapper {
 
     public ArticleSummaryResponse toSummaryResponse(Article article) {
         log.info("ArticleMapper.toSummaryResponse: {}", article);
+
         return new ArticleSummaryResponse(
                 article.getId(),
                 article.getTitle(),

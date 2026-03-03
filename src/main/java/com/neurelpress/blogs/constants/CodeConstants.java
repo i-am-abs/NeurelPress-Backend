@@ -16,7 +16,7 @@ public final class CodeConstants {
     public static final String TOKEN = "token";
     public static final String MESSAGE = "message";
     public static final String USER = "user";
-    public static final String USERNAME= "username";
+    public static final String USERNAME = "username";
     public static final String ID = "Id";
     public static final String BOOK = "Book";
     public static final String Article = "Article";
@@ -24,6 +24,7 @@ public final class CodeConstants {
     public static final String TAGS = "Tags";
     public static final String Quote = "Quote";
     public static final String Active = "Active";
+    public static final String Email = "Email";
 
     public static final String EMAIL_VERIFICATION_SUCCESSFUL = "Email verified successfully";
     public static final String EMAIL_VERIFICATION_FAILED = "Email verification failed";

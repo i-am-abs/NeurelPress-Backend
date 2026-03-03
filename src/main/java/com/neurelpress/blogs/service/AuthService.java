@@ -1,6 +1,8 @@
 package com.neurelpress.blogs.service;
 
 import com.neurelpress.blogs.dto.request.LoginRequest;
+import com.neurelpress.blogs.dto.request.OtpLoginRequest;
+import com.neurelpress.blogs.dto.request.OtpRequest;
 import com.neurelpress.blogs.dto.request.RefreshTokenRequest;
 import com.neurelpress.blogs.dto.request.RegisterRequest;
 import com.neurelpress.blogs.dto.response.AuthResponse;
@@ -23,4 +25,8 @@ public interface AuthService {
     void verifyEmail(String token);
 
     void resendVerificationEmail(UUID userId);
+
+    void requestLoginOtp(OtpRequest request);
+
+    AuthResponse loginWithOtp(OtpLoginRequest request);
 }
