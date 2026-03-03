@@ -1,0 +1,231 @@
+package com.neurelpress.blogs.service.impl;
+
+import com.neurelpress.blogs.constants.CodeConstants;
+import com.neurelpress.blogs.dto.request.ArticleRequest;
+import com.neurelpress.blogs.dto.response.ArticleResponse;
+import com.neurelpress.blogs.dto.response.ArticleSummaryResponse;
+import com.neurelpress.blogs.dto.response.PageResponse;
+import com.neurelpress.blogs.dao.Article;
+import com.neurelpress.blogs.dao.Book;
+import com.neurelpress.blogs.dao.Tag;
+import com.neurelpress.blogs.dao.User;
+import com.neurelpress.blogs.constants.enums.ArticleStatus;
+import com.neurelpress.blogs.exception.ResourceNotFoundException;
+import com.neurelpress.blogs.exception.UnauthorizedException;
+import com.neurelpress.blogs.mapper.ArticleMapper;
+import com.neurelpress.blogs.repository.ArticleRepository;
+import com.neurelpress.blogs.repository.BookRepository;
+import com.neurelpress.blogs.repository.TagRepository;
+import com.neurelpress.blogs.repository.UserRepository;
+import com.neurelpress.blogs.service.ArticleService;
+import com.neurelpress.blogs.utils.PageResponseSupport;
+import com.neurelpress.blogs.utils.SlugUtils;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Instant;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+
+import static com.neurelpress.blogs.constants.CodeConstants.WORDS_PER_MINUTE;
+
+@Slf4j
+@Service
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
+public class ArticleServiceImpl implements ArticleService {
+
+    private final ArticleRepository articleRepository;
+    private final UserRepository userRepository;
+    private final TagRepository tagRepository;
+    private final BookRepository bookRepository;
+    private final ArticleMapper articleMapper;
+
+    @Override
+    @Transactional
+    public ArticleResponse createArticle(UUID authorId, ArticleRequest request) {
+        User author = userRepository.findById(authorId)
+                .orElseThrow(() -> new ResourceNotFoundException(CodeConstants.USER, CodeConstants.ID, authorId));
+
+        String slug = uniqueSlug(SlugUtils.toSlug(request.title()));
+        Set<Tag> tags = resolveTags(request.tagSlugs());
+        Set<Book> books = resolveBooks(request.bookIds());
+
+        int readTime = computeReadTime(request.content());
+
+        Article article = Article.builder()
+                .author(author)
+                .title(request.title())
+                .slug(slug)
+                .summary(request.summary())
+                .content(request.content())
+                .coverImage(request.coverImage())
+                .status(ArticleStatus.valueOf(ArticleStatus.DRAFT.getArticleStatus()))
+                .readTime(readTime)
+                .seoTitle(request.seoTitle())
+                .seoDescription(request.seoDescription())
+                .canonicalUrl(request.canonicalUrl())
+                .tags(tags)
+                .books(books)
+                .build();
+
+        article = articleRepository.save(article);
+        log.info("Created new article: {}", article.getSlug());
+        return articleMapper.toResponse(article);
+    }
+
+    @Override
+    @Transactional
+    public ArticleResponse updateArticle(UUID authorId, String slug, ArticleRequest request) {
+        Article article = articleRepository.findBySlug(slug)
+                .orElseThrow(() -> new ResourceNotFoundException(CodeConstants.Article, CodeConstants.SLUG, slug));
+        if (!article.getAuthor().getId().equals(authorId)) {
+            throw new UnauthorizedException("Not authorized to update this article");
+        }
+
+        article.setTitle(request.title());
+        article.setSummary(request.summary());
+        article.setContent(request.content());
+        article.setCoverImage(request.coverImage());
+        article.setSeoTitle(request.seoTitle());
+        article.setSeoDescription(request.seoDescription());
+        article.setCanonicalUrl(request.canonicalUrl());
+        article.setReadTime(computeReadTime(request.content()));
+        article.setTags(resolveTags(request.tagSlugs()));
+        article.setBooks(resolveBooks(request.bookIds()));
+
+        article = articleRepository.save(article);
+        log.info("Updated article: {}", article.getSlug());
+        return articleMapper.toResponse(article);
+    }
+
+    @Override
+    @Transactional
+    public ArticleResponse publishArticle(UUID authorId, String slug) {
+        Article article = articleRepository.findBySlug(slug)
+                .orElseThrow(() -> new ResourceNotFoundException(CodeConstants.Article, CodeConstants.SLUG, slug));
+        if (!article.getAuthor().getId().equals(authorId)) {
+            throw new UnauthorizedException("Not authorized to publish this article");
+        }
+        article.setStatus(ArticleStatus.PUBLISHED);
+        article.setPublishedAt(Instant.now());
+        article = articleRepository.save(article);
+        log.info("Published article: {}", article.getSlug());
+        return articleMapper.toResponse(article);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ArticleResponse getArticleBySlug(String slug) {
+        Article article = articleRepository.findPublishedBySlug(slug)
+                .orElseThrow(() -> new ResourceNotFoundException(CodeConstants.Article, CodeConstants.SLUG, slug));
+        articleRepository.incrementViews(article.getId());
+        log.info("Article viewed: {}", slug);
+        return articleMapper.toResponse(article);
+    }
+
+    @Override
+    @Transactional
+    public void recordView(String slug) {
+        articleRepository.findBySlug(slug)
+                .ifPresent(a -> articleRepository.incrementViews(a.getId()));
+        log.info("Article viewed and recorded View: {}", slug);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PageResponse<ArticleSummaryResponse> getPublishedArticles(int page, int size) {
+        Page<Article> p = articleRepository.findByStatusOrderByPublishedAtDesc(
+                ArticleStatus.PUBLISHED, Pageable.ofSize(size).withPage(page));
+        log.info("Getting published articles with page {} and size {}", page, size);
+        return PageResponseSupport.from(p, articleMapper::toSummaryResponse);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PageResponse<ArticleSummaryResponse> getArticlesByTag(String tagSlug, int page, int size) {
+        Page<Article> p = articleRepository.findByTagSlug(tagSlug, Pageable.ofSize(size).withPage(page));
+        log.info("Getting articles by tag {} with page {} and size {}", tagSlug, page, size);
+        return PageResponseSupport.from(p, articleMapper::toSummaryResponse);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PageResponse<ArticleSummaryResponse> getArticlesByAuthor(UUID authorId, int page, int size) {
+        Page<Article> p = articleRepository.findByAuthorIdAndStatusOrderByCreatedAtDesc(
+                authorId, ArticleStatus.valueOf(ArticleStatus.PUBLISHED.getArticleStatus()), Pageable.ofSize(size).withPage(page));
+        log.info("Getting articles by author {} with page {} and size {}", authorId, page, size);
+        return PageResponseSupport.from(p, articleMapper::toSummaryResponse);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PageResponse<ArticleSummaryResponse> getDraftsByAuthor(UUID authorId, int page, int size) {
+        Page<Article> p = articleRepository.findByAuthorIdAndStatusOrderByCreatedAtDesc(
+                authorId, ArticleStatus.valueOf(ArticleStatus.DRAFT.getArticleStatus()),
+                Pageable.ofSize(size).withPage(page));
+        log.info("Getting drafts by author {} with page {} and size {}", authorId, page, size);
+        return PageResponseSupport.from(p, articleMapper::toSummaryResponse);
+    }
+
+    @Override
+    @Transactional
+    public void deleteArticle(UUID authorId, String slug) {
+        Article article = articleRepository.findBySlug(slug)
+                .orElseThrow(() -> new ResourceNotFoundException(CodeConstants.Article, CodeConstants.SLUG, slug));
+        if (!article.getAuthor().getId().equals(authorId)) {
+            throw new UnauthorizedException("Not authorized to delete this article");
+        }
+        articleRepository.delete(article);
+    }
+
+    @Override
+    @Transactional
+    public void clapArticle(String slug) {
+        Article article = articleRepository.findPublishedBySlug(slug)
+                .orElseThrow(() -> new ResourceNotFoundException(CodeConstants.Article, CodeConstants.SLUG, slug));
+        articleRepository.incrementClaps(article.getId());
+        log.info("Article clapped: {}", slug);
+    }
+
+    private String uniqueSlug(String base) {
+        String slug = base;
+        int suffix = 0;
+        while (articleRepository.existsBySlug(slug)) {
+            slug = base + "-" + (++suffix);
+        }
+        return slug;
+    }
+
+    private Set<Tag> resolveTags(List<String> tagSlugs) {
+        if (tagSlugs == null || tagSlugs.isEmpty()) return new HashSet<>();
+        List<Tag> found = tagRepository.findBySlugIn(tagSlugs);
+        if (found.size() != tagSlugs.size()) {
+            throw new ResourceNotFoundException(CodeConstants.TAGS, CodeConstants.SLUG, String.join(", ", tagSlugs));
+        }
+        log.info("Resolved {} tags: {}", found.size(), String.join(", ", tagSlugs));
+        return new HashSet<>(found);
+    }
+
+    private Set<Book> resolveBooks(List<UUID> bookIds) {
+        if (bookIds == null || bookIds.isEmpty()) {
+            return new HashSet<>();
+        }
+        log.info("Resolved {} books: {}", bookIds.size(), String.join(", ", bookIds.toString()));
+        return new HashSet<>(bookRepository.findAllById(bookIds));
+    }
+
+    private static int computeReadTime(String content) {
+        if (content == null || content.isBlank()) {
+            return 0;
+        }
+        log.info("Computing read time for content: {}", content);
+        return Math.max(1, content.trim().split("\\s+").length / WORDS_PER_MINUTE);
+    }
+}

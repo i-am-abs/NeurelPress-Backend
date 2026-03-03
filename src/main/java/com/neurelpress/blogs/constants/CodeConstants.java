@@ -1,0 +1,42 @@
+package com.neurelpress.blogs.constants;
+
+public final class CodeConstants {
+    public static final String BEARER = "Bearer";
+
+    public static final String GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta";
+
+    public static final String TRENDING = "trending";
+    public static final String QUOTE_OF_THE_DAY = "quoteOfTheDay";
+    public static final String ARTICLE_VIEWS = "articleViews";
+
+    public static final String TITLE = "title";
+    public static final String CONTENT = "content";
+    public static final String SUMMARY = "Summary";
+    public static final String FOLLOWING = "following";
+    public static final String TOKEN = "token";
+    public static final String MESSAGE = "message";
+    public static final String USER = "user";
+    public static final String USERNAME= "username";
+    public static final String ID = "Id";
+    public static final String BOOK = "Book";
+    public static final String Article = "Article";
+    public static final String SLUG = "slug";
+    public static final String TAGS = "Tags";
+    public static final String Quote = "Quote";
+    public static final String Active = "Active";
+
+    public static final String EMAIL_VERIFICATION_SUCCESSFUL = "Email verified successfully";
+    public static final String EMAIL_VERIFICATION_FAILED = "Email verification failed";
+    public static final String EMAIL_VERIFICATION_SENT = "Verification email sent";
+
+    public static final Integer TIME_STAMP_HOUR = 24;
+    public static final Integer TIME_STAMP_MINUTE = 60;
+    public static final Integer TIME_STAMP_SECOND = 60;
+    public static final Integer REDIS_CACHE_TTL = 30;
+    public static final Integer WORDS_PER_MINUTE = 200;
+    public static final int EMAIL_VERIFICATION_EXPIRE_HOURS = 24;
+
+    private CodeConstants() {
+        throw new UnsupportedOperationException("Constant class cannot be instantiated");
+    }
+}
