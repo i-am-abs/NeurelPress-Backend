@@ -36,13 +36,6 @@ public class BookController {
         return ResponseEntity.ok(bookService.getAllBooks(page, size));
     }
 
-    @GetMapping("/{id}")
-    @Operation(summary = "Get book by ID")
-    public ResponseEntity<BookResponse> getBook(@PathVariable UUID id) {
-        log.info("Getting book with ID: {}", id);
-        return ResponseEntity.ok(bookService.getBookById(id));
-    }
-
     @GetMapping(ApiConstants.Top)
     @Operation(summary = "Get top referenced books")
     public ResponseEntity<List<BookResponse>> getTopBooks(
@@ -59,5 +52,12 @@ public class BookController {
             @RequestParam(defaultValue = "12") int size) {
         log.info("Searching books with query: {}, page: {}, size: {}", q, page, size);
         return ResponseEntity.ok(bookService.searchBooks(q, page, size));
+    }
+
+    @GetMapping("/{id}")
+    @Operation(summary = "Get book by ID")
+    public ResponseEntity<BookResponse> getBook(@PathVariable UUID id) {
+        log.info("Getting book with ID: {}", id);
+        return ResponseEntity.ok(bookService.getBookById(id));
     }
 }

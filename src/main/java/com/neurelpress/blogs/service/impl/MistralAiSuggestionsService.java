@@ -112,8 +112,6 @@ public class MistralAiSuggestionsService implements AiSuggestionsService {
             return Collections.emptyList();
         }
 
-        // Mistral often returns natural language or fenced code blocks.
-        // We tolerate many formats and just extract simple tag tokens.
         String cleaned = response
                 .replace("```json", "")
                 .replace("```", "")

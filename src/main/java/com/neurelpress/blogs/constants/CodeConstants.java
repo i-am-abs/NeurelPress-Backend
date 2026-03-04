@@ -4,6 +4,7 @@ public final class CodeConstants {
     public static final String BEARER = "Bearer";
 
     public static final String GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta";
+    public static final String MISTRAL_BASE_URL = "https://api.mistral.ai/v1";
 
     public static final String TRENDING = "trending";
     public static final String QUOTE_OF_THE_DAY = "quoteOfTheDay";
