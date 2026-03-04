@@ -30,12 +30,34 @@ public final class CodeConstants {
     public static final String EMAIL_VERIFICATION_FAILED = "Email verification failed";
     public static final String EMAIL_VERIFICATION_SENT = "Verification email sent";
 
+    public static final String TAG_SUGGESTION_PROMPT = """
+            You are an expert at tagging technical and AI/ML articles for a scientific publishing platform.
+            Given the following article title and a short excerpt, suggest exactly 3-5 relevant tags.
+            Return ONLY a JSON array of tag names (lowercase, hyphenated for multi-word).
+            Example: ["deep-learning","nlp","transformers"]
+            Title: %s
+            Excerpt: %s
+            """;
+
+    public static final String TITLE_SUGGESTION_PROMPT = """
+            You are an editor for a technical blog.
+            Suggest one concise, SEO-friendly title (max 80 chars).
+            Return ONLY the title.
+            Excerpt: %s
+            """;
+
+    public static final String SUMMARY_PROMPT = """
+            Summarize this technical article in 1-2 sentences for a meta description (max 160 chars).
+            Return ONLY the summary.
+            Content: %s
+            """;
+
     public static final Integer TIME_STAMP_HOUR = 24;
     public static final Integer TIME_STAMP_MINUTE = 60;
     public static final Integer TIME_STAMP_SECOND = 60;
     public static final Integer REDIS_CACHE_TTL = 30;
     public static final Integer WORDS_PER_MINUTE = 200;
-    public static final int EMAIL_VERIFICATION_EXPIRE_HOURS = 24;
+    public static final Integer EMAIL_VERIFICATION_EXPIRE_HOURS = 24;
 
     private CodeConstants() {
         throw new UnsupportedOperationException("Constant class cannot be instantiated");
