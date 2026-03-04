@@ -9,18 +9,21 @@ public record UserResponse(
         String username,
         String email,
         String displayName,
+        String headline,
         String bio,
         String avatarUrl,
         String role,
+        String githubUrl,
+        String linkedinUrl,
+        String websiteUrl,
+        String techTags,
 
-        boolean githubUrl,
+        boolean verified,
 
-        int linkedinUrl,
-        int websiteUrl,
+        int followersCount,
+        int followingCount,
 
-        String followersCount,
-        String followingCount,
-        String verified,
+        Long publishedArticleCount,
 
         Instant createdAt
 ) {}

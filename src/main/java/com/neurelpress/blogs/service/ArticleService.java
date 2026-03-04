@@ -30,5 +30,5 @@ public interface ArticleService {
 
     void deleteArticle(UUID authorId, String slug);
 
-    void clapArticle(String slug);
+    void clapArticle(UUID userId, String slug);
 }

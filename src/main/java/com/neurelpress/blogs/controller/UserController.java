@@ -62,11 +62,13 @@ public class UserController {
         return ResponseEntity.ok(userService.updateProfile(
                 userPrincipal.getId(),
                 updateDetails.get("displayName"),
+                updateDetails.get("headline"),
                 updateDetails.get("bio"),
                 updateDetails.get("avatarUrl"),
                 updateDetails.get("githubUrl"),
                 updateDetails.get("linkedinUrl"),
-                updateDetails.get("websiteUrl")
+                updateDetails.get("websiteUrl"),
+                updateDetails.get("techTags")
         ));
     }
 

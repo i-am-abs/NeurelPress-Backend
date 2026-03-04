@@ -6,6 +6,7 @@ import com.neurelpress.blogs.dto.response.ArticleResponse;
 import com.neurelpress.blogs.dto.response.ArticleSummaryResponse;
 import com.neurelpress.blogs.dto.response.PageResponse;
 import com.neurelpress.blogs.dao.Article;
+import com.neurelpress.blogs.dao.ArticleClap;
 import com.neurelpress.blogs.dao.Book;
 import com.neurelpress.blogs.dao.Tag;
 import com.neurelpress.blogs.dao.User;
@@ -13,10 +14,12 @@ import com.neurelpress.blogs.constants.enums.ArticleStatus;
 import com.neurelpress.blogs.exception.ResourceNotFoundException;
 import com.neurelpress.blogs.exception.UnauthorizedException;
 import com.neurelpress.blogs.mapper.ArticleMapper;
+import com.neurelpress.blogs.repository.ArticleClapRepository;
 import com.neurelpress.blogs.repository.ArticleRepository;
 import com.neurelpress.blogs.repository.BookRepository;
 import com.neurelpress.blogs.repository.TagRepository;
 import com.neurelpress.blogs.repository.UserRepository;
+import com.neurelpress.blogs.service.AiSuggestionsService;
 import com.neurelpress.blogs.service.ArticleService;
 import com.neurelpress.blogs.utils.PageResponseSupport;
 import com.neurelpress.blogs.utils.SlugUtils;
@@ -42,10 +45,12 @@ import static com.neurelpress.blogs.constants.CodeConstants.WORDS_PER_MINUTE;
 public class ArticleServiceImpl implements ArticleService {
 
     private final ArticleRepository articleRepository;
+    private final ArticleClapRepository articleClapRepository;
     private final UserRepository userRepository;
     private final TagRepository tagRepository;
     private final BookRepository bookRepository;
     private final ArticleMapper articleMapper;
+    private final AiSuggestionsService aiSuggestionsService;
 
     @Override
     @Transactional
@@ -113,6 +118,24 @@ public class ArticleServiceImpl implements ArticleService {
         if (!article.getAuthor().getId().equals(authorId)) {
             throw new UnauthorizedException("Not authorized to publish this article");
         }
+
+        // If the author didn't choose tags, let the active AI provider suggest some.
+        if (article.getTags().isEmpty() && article.getContent() != null && !article.getContent().isBlank()) {
+            try {
+                var suggestedSlugs = aiSuggestionsService.suggestTags(article.getTitle(), article.getContent());
+                if (suggestedSlugs != null && !suggestedSlugs.isEmpty()) {
+                    var found = tagRepository.findBySlugIn(suggestedSlugs);
+                    if (!found.isEmpty()) {
+                        article.setTags(new HashSet<>(found));
+                        log.info("AI attached {} tag(s) to article {}: {}", found.size(), slug,
+                                String.join(", ", found.stream().map(Tag::getSlug).toList()));
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("AI tag suggestion failed for article {}: {}", slug, e.getMessage());
+            }
+        }
+
         article.setStatus(ArticleStatus.PUBLISHED);
         article.setPublishedAt(Instant.now());
         article = articleRepository.save(article);
@@ -185,11 +208,18 @@ public class ArticleServiceImpl implements ArticleService {
 
     @Override
     @Transactional
-    public void clapArticle(String slug) {
+    public void clapArticle(UUID userId, String slug) {
         Article article = articleRepository.findPublishedBySlug(slug)
                 .orElseThrow(() -> new ResourceNotFoundException(CodeConstants.Article, CodeConstants.SLUG, slug));
+        if (articleClapRepository.existsByUserIdAndArticleId(userId, article.getId())) {
+            log.debug("User {} already clapped article {}", userId, slug);
+            return;
+        }
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException(CodeConstants.USER, CodeConstants.ID, userId));
+        articleClapRepository.save(ArticleClap.builder().user(user).article(article).build());
         articleRepository.incrementClaps(article.getId());
-        log.info("Article clapped: {}", slug);
+        log.info("Article clapped: {} by user {}", slug, userId);
     }
 
     private String uniqueSlug(String base) {

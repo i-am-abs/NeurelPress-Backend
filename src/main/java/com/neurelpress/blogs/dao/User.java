@@ -65,8 +65,13 @@ public class User {
     @Column(columnDefinition = "TEXT")
     private String bio;
 
+    private String headline;
     private String avatarUrl;
     private String displayName;
+
+    /** Comma-separated tech/skill tags for credibility (e.g. "ML, Python, React") */
+    @Column(length = 500)
+    private String techTags;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

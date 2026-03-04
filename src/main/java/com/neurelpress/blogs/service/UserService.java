@@ -10,9 +10,9 @@ public interface UserService {
 
     UserResponse getProfileByUsername(String username);
 
-    UserResponse updateProfile(UUID userId, String displayName, String bio,
+    UserResponse updateProfile(UUID userId, String displayName, String headline, String bio,
                               String avatarUrl, String githubUrl,
-                              String linkedinUrl, String websiteUrl);
+                              String linkedinUrl, String websiteUrl, String techTags);
 
     long getPublishedArticleCount(UUID userId);
 

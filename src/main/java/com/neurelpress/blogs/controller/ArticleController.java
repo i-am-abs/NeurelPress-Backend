@@ -105,9 +105,14 @@ public class ArticleController {
     }
 
     @PostMapping("/{slug}/clap")
-    @Operation(summary = "Clap for an article")
-    public ResponseEntity<Void> clapArticle(@PathVariable String slug) {
-        articleService.clapArticle(slug);
+    @Operation(summary = "Clap for an article (one clap per user)")
+    public ResponseEntity<Void> clapArticle(
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
+            @PathVariable String slug) {
+        if (userPrincipal == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        articleService.clapArticle(userPrincipal.getId(), slug);
         log.info("Clapped for article: {}", slug);
         return ResponseEntity.ok().build();
     }

@@ -17,6 +17,7 @@ import com.neurelpress.blogs.exception.DuplicateResourceException;
 import com.neurelpress.blogs.exception.ResourceNotFoundException;
 import com.neurelpress.blogs.exception.UnauthorizedException;
 import com.neurelpress.blogs.mapper.UserMapper;
+import com.neurelpress.blogs.repository.ArticleRepository;
 import com.neurelpress.blogs.repository.EmailOtpRepository;
 import com.neurelpress.blogs.repository.EmailVerificationTokenRepository;
 import com.neurelpress.blogs.repository.RefreshTokenRepository;
@@ -42,6 +43,7 @@ import java.util.concurrent.ThreadLocalRandom;
 public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
+    private final ArticleRepository articleRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final EmailVerificationTokenRepository emailVerificationTokenRepository;
     private final EmailOtpRepository emailOtpRepository;
@@ -140,7 +142,8 @@ public class AuthServiceImpl implements AuthService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException(CodeConstants.USER, CodeConstants.ID, userId));
         log.info("User fetched: {}", user.getEmail());
-        return userMapper.toResponse(user);
+        long publishedCount = articleRepository.countPublishedByAuthor(user.getId());
+        return userMapper.toResponse(user, publishedCount);
     }
 
     @Override
@@ -243,7 +246,8 @@ public class AuthServiceImpl implements AuthService {
                 .build();
         refreshTokenRepository.save(refreshToken);
         log.info("New refresh token created: {}", refreshTokenStr);
+        long publishedCount = articleRepository.countPublishedByAuthor(user.getId());
         return new AuthResponse(accessToken, refreshTokenStr, CodeConstants.BEARER,
-                tokenProvider.getAccessExpirationMs() / 1000, userMapper.toResponse(user));
+                tokenProvider.getAccessExpirationMs() / 1000, userMapper.toResponse(user, publishedCount));
     }
 }

@@ -33,19 +33,23 @@ public class UserServiceImpl implements UserService {
     public UserResponse getProfileByUsername(String username) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException(CodeConstants.USER, CodeConstants.USERNAME, username));
-        return userMapper.toResponse(user);
+        long publishedCount = articleRepository.countPublishedByAuthor(user.getId());
+        return userMapper.toResponse(user, publishedCount);
     }
 
     @Override
     @Transactional
-    public UserResponse updateProfile(UUID userId, String displayName, String bio,
+    public UserResponse updateProfile(UUID userId, String displayName, String headline, String bio,
                                       String avatarUrl, String githubUrl,
-                                      String linkedinUrl, String websiteUrl) {
+                                      String linkedinUrl, String websiteUrl, String techTags) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException(CodeConstants.USER, CodeConstants.ID, userId));
 
         if (displayName != null) {
             user.setDisplayName(displayName);
+        }
+        if (headline != null) {
+            user.setHeadline(headline);
         }
         if (bio != null) {
             user.setBio(bio);
@@ -62,10 +66,14 @@ public class UserServiceImpl implements UserService {
         if (websiteUrl != null) {
             user.setWebsiteUrl(websiteUrl);
         }
+        if (techTags != null) {
+            user.setTechTags(techTags);
+        }
 
         user = userRepository.save(user);
+        long publishedCount = articleRepository.countPublishedByAuthor(user.getId());
         log.info("Updated user profile: {}", user.getUsername());
-        return userMapper.toResponse(user);
+        return userMapper.toResponse(user, publishedCount);
     }
 
     @Override
@@ -80,6 +88,6 @@ public class UserServiceImpl implements UserService {
     public PageResponse<UserResponse> searchUsers(String query, int page, int size) {
         log.info("Searching users with query: {} (page {}, size {})", query, page, size);
         Page<User> p = userRepository.search(query, Pageable.ofSize(size).withPage(page));
-        return PageResponseSupport.from(p, userMapper::toResponse);
+        return PageResponseSupport.from(p, u -> userMapper.toResponse(u, 0L));
     }
 }
