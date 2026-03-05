@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
 public class BookMapper {
 
     public BookResponse toResponse(Book book) {
-        log.info("Mapping book: {}", book);
+        log.debug("Mapping book: {}", book.getId());
         return new BookResponse(
                 book.getId(),
                 book.getTitle(),
@@ -28,7 +28,7 @@ public class BookMapper {
     }
 
     public Set<BookResponse> toResponseSet(Set<Book> books) {
-        log.info("Mapping books: {}", books);
+        log.debug("Mapping books: {}", books);
         return books.stream()
                 .map(this::toResponse)
                 .collect(Collectors.toSet());

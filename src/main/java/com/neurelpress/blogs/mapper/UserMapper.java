@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 public class UserMapper {
 
     public UserResponse toResponse(User user, long publishedArticleCount) {
-        log.info("Mapping user: {}", user);
+        log.debug("Mapping user: {}", user.getId());
 
         return new UserResponse(
                 user.getId(),
@@ -35,7 +35,7 @@ public class UserMapper {
     }
 
     public ArticleResponse.AuthorSummary toAuthorSummary(User user) {
-        log.info("Mapping user for Author Summary: {}", user);
+        log.debug("Mapping user for Author Summary: {}", user.getId());
 
         return new ArticleResponse.AuthorSummary(
                 user.getId(),

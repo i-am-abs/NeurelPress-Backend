@@ -23,7 +23,7 @@ public class ArticleMapper {
     private final BookMapper bookMapper;
 
     public ArticleResponse toResponse(Article article) {
-        log.info("ArticleMapper.toResponse: {}", article);
+        log.debug("ArticleMapper.toResponse: {}", article.getId());
 
         return new ArticleResponse(
                 article.getId(),
@@ -51,7 +51,7 @@ public class ArticleMapper {
     }
 
     public ArticleSummaryResponse toSummaryResponse(Article article) {
-        log.info("ArticleMapper.toSummaryResponse: {}", article);
+        log.debug("ArticleMapper.toSummaryResponse: {}", article.getId());
 
         return new ArticleSummaryResponse(
                 article.getId(),

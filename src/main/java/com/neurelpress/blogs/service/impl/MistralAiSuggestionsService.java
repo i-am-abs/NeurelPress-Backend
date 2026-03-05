@@ -112,11 +112,38 @@ public class MistralAiSuggestionsService implements AiSuggestionsService {
             return Collections.emptyList();
         }
 
+        try {
+            // Try parsing as JSON first
+            JsonNode node = objectMapper.readTree(response);
+            if (node.isArray()) {
+                List<String> tags = new java.util.ArrayList<>();
+                for (JsonNode item : node) {
+                    String tag = item.asText().trim();
+                    if (!tag.isEmpty()) {
+                        String cleaned = tag.toLowerCase()
+                                .replaceAll("[^a-z0-9\\s-]", "")
+                                .replaceAll("^[-*\\d.\\s]+", "")
+                                .replaceAll("\\s+", "-")
+                                .replaceAll("-+", "-")
+                                .replaceAll("^-|-$", "");
+                        if (!cleaned.isEmpty()) {
+                            tags.add(cleaned);
+                        }
+                    }
+                }
+                return tags.stream().distinct().limit(5).toList();
+            }
+        } catch (Exception e) {
+            log.debug("Failed to parse as JSON array, trying string parsing: {}", e.getMessage());
+        }
+
+        // Fallback: string-based parsing
         String cleaned = response
                 .replace("```json", "")
                 .replace("```", "")
                 .replace("[", "")
                 .replace("]", "")
+                .replace("\"", "")
                 .replace("`", "")
                 .trim();
 
@@ -131,6 +158,8 @@ public class MistralAiSuggestionsService implements AiSuggestionsService {
                 .map(s -> s.replaceAll("^[-*\\d.\\s]+", "")) // drop bullets / numbering
                 .map(s -> s.toLowerCase().replaceAll("[^a-z0-9\\s-]", "")) // keep alnum + spaces/hyphen
                 .map(s -> s.replaceAll("\\s+", "-"))
+                .map(s -> s.replaceAll("-+", "-"))
+                .map(s -> s.replaceAll("^-|-$", ""))
                 .filter(s -> !s.isEmpty())
                 .distinct()
                 .limit(5)

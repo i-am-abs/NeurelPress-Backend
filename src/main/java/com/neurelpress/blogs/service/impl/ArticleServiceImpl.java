@@ -157,7 +157,7 @@ public class ArticleServiceImpl implements ArticleService {
     public void recordView(String slug) {
         articleRepository.findBySlug(slug)
                 .ifPresent(a -> articleRepository.incrementViews(a.getId()));
-        log.info("Article viewed and recorded View: {}", slug);
+        log.debug("Article view recorded: {}", slug);
     }
 
     @Override
@@ -253,7 +253,9 @@ public class ArticleServiceImpl implements ArticleService {
         if (content == null || content.isBlank()) {
             return 0;
         }
-        log.info("Computing read time for content: {}", content);
-        return Math.max(1, content.trim().split("\\s+").length / WORDS_PER_MINUTE);
+        int words = content.trim().split("\\s+").length;
+        int minutes = Math.max(1, words / WORDS_PER_MINUTE);
+        log.debug("Computed read time: {} words -> {} min", words, minutes);
+        return minutes;
     }
 }

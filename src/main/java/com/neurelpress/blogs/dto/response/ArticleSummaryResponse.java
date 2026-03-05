@@ -1,5 +1,6 @@
 package com.neurelpress.blogs.dto.response;
 
+import java.io.Serializable;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -24,4 +25,4 @@ public record ArticleSummaryResponse(
 
         ArticleResponse.AuthorSummary author,
         List<TagResponse> tags
-) {}
+) implements Serializable {}

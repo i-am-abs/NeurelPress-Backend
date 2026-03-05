@@ -1,5 +1,6 @@
 package com.neurelpress.blogs.dto.response;
 
+import java.io.Serializable;
 import java.util.UUID;
 
 public record BookResponse(
@@ -15,4 +16,4 @@ public record BookResponse(
         double rating,
 
         String referencedCount
-) {}
+) implements Serializable {}

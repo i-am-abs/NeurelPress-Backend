@@ -55,7 +55,11 @@ public class UserServiceImpl implements UserService {
             user.setBio(bio);
         }
         if (avatarUrl != null) {
-            user.setAvatarUrl(avatarUrl);
+            if (!avatarUrl.isBlank() && avatarUrl.startsWith("data:")) {
+                log.info("Ignoring data URI avatar for user {} to avoid oversized payloads", userId);
+            } else {
+                user.setAvatarUrl(avatarUrl);
+            }
         }
         if (githubUrl != null) {
             user.setGithubUrl(githubUrl);

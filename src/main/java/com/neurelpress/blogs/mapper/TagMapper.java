@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
 public class TagMapper {
 
     public TagResponse toResponse(Tag tag) {
-        log.info("Mapping tag: {}", tag);
+        log.debug("Mapping tag: {}", tag.getSlug());
         return new TagResponse(
                 tag.getId(),
                 tag.getName(),
@@ -24,7 +24,7 @@ public class TagMapper {
     }
 
     public Set<TagResponse> toResponseSet(Set<Tag> tags) {
-        log.info("Mapping tags: {}", tags);
+        log.debug("Mapping tags: {}", tags);
         return tags.stream()
                 .map(this::toResponse)
                 .collect(Collectors.toSet());

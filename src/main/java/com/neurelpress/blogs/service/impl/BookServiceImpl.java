@@ -11,6 +11,7 @@ import com.neurelpress.blogs.service.BookService;
 import com.neurelpress.blogs.utils.PageResponseSupport;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -46,6 +47,7 @@ public class BookServiceImpl implements BookService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(cacheNames = "topReferencedBooks", key = "#limit")
     public List<BookResponse> getTopReferenced(int limit) {
         List<Book> books = bookRepository.findTopReferenced(Pageable.ofSize(limit));
         log.info("Getting top referenced books with limit {}", limit);

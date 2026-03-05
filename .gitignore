@@ -9,6 +9,6 @@ target/
 blogs.iml
 *.iml
 .DS_Store
-application.proerties
+application.properties
 application-dev.properties
 firebase-service-account.json

@@ -6,6 +6,7 @@ import com.neurelpress.blogs.repository.ArticleAnalyticsRepository;
 import com.neurelpress.blogs.service.TrendingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,6 +23,7 @@ public class TrendingServiceImpl implements TrendingService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(cacheNames = "trendingArticles", key = "#limit")
     public List<ArticleSummaryResponse> getTrendingArticles(int limit) {
         log.info("Getting trending articles with limit: {}", limit);
         return articleAnalyticsRepository.findTrending(PageRequest.of(0, limit))

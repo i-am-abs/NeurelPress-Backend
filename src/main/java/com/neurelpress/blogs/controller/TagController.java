@@ -8,9 +8,13 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
@@ -26,6 +30,7 @@ public class TagController {
 
     @GetMapping
     @Operation(summary = "Get all tags")
+    @Cacheable(cacheNames = "allTags")
     public ResponseEntity<List<TagResponse>> getAllTags() {
         log.info("Getting all tags");
         return ResponseEntity.ok(
@@ -38,6 +43,7 @@ public class TagController {
 
     @GetMapping(ApiConstants.Top)
     @Operation(summary = "Get top tags by article count")
+    @Cacheable(cacheNames = "topTags", key = "#limit")
     public ResponseEntity<List<TagResponse>> getTopTags(
             @RequestParam(defaultValue = "10") int limit) {
         log.info("Getting top tags with limit: {}", limit);
