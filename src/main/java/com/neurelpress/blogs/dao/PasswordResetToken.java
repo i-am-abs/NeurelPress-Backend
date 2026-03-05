@@ -22,10 +22,10 @@ import java.util.UUID;
 
 @Entity
 @Table(
-        name = "email_otps",
+        name = "password_reset_token",
         indexes = {
-                @Index(name = "idx_email_otp_user", columnList = "user_id"),
-                @Index(name = "idx_email_otp_code", columnList = "code")
+                @Index(name = "idx_password_reset_token", columnList = "token", unique = true),
+                @Index(name = "idx_password_reset_user", columnList = "user_id")
         }
 )
 @Getter
@@ -33,18 +33,18 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class EmailOtp {
+public class PasswordResetToken {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
+    @Column(nullable = false, unique = true)
+    private String token;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
-
-    @Column(nullable = false, length = 6)
-    private String code;
 
     @Column(nullable = false)
     private Instant expiresAt;
@@ -56,4 +56,3 @@ public class EmailOtp {
     @CreationTimestamp
     private Instant createdAt;
 }
-

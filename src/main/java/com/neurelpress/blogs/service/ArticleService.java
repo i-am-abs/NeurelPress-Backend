@@ -16,7 +16,7 @@ public interface ArticleService {
 
     ArticleResponse publishArticle(UUID authorId, String slug);
 
-    ArticleResponse getArticleBySlug(String slug);
+    ArticleResponse getArticleBySlug(UUID viewerId, String slug);
 
     void recordView(String slug);
 
@@ -27,6 +27,8 @@ public interface ArticleService {
     PageResponse<ArticleSummaryResponse> getArticlesByAuthor(UUID authorId, int page, int size);
 
     PageResponse<ArticleSummaryResponse> getDraftsByAuthor(UUID authorId, int page, int size);
+
+    PageResponse<ArticleSummaryResponse> getArticlesByAuthorAllStatus(UUID authorId, int page, int size);
 
     void deleteArticle(UUID authorId, String slug);
 

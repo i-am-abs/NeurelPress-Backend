@@ -1,7 +1,7 @@
 package com.neurelpress.blogs.mapper;
 
-import com.neurelpress.blogs.dto.response.TagResponse;
 import com.neurelpress.blogs.dao.Tag;
+import com.neurelpress.blogs.dto.response.TagResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 

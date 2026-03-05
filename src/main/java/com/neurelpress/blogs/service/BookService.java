@@ -16,4 +16,6 @@ public interface BookService {
     List<BookResponse> getTopReferenced(int limit);
 
     PageResponse<BookResponse> searchBooks(String query, int page, int size);
+
+    PageResponse<BookResponse> getBooksByCategory(String category, int page, int size);
 }

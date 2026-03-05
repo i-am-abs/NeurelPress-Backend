@@ -19,4 +19,5 @@ public record RegisterRequest(
 
         @Size(max = 100)
         String displayName
-) {}
+) {
+}

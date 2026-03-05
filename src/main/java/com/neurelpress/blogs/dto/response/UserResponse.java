@@ -26,4 +26,5 @@ public record UserResponse(
         Long publishedArticleCount,
 
         Instant createdAt
-) {}
+) {
+}

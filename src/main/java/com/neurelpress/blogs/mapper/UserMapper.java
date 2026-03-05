@@ -1,8 +1,8 @@
 package com.neurelpress.blogs.mapper;
 
+import com.neurelpress.blogs.dao.User;
 import com.neurelpress.blogs.dto.response.ArticleResponse;
 import com.neurelpress.blogs.dto.response.UserResponse;
-import com.neurelpress.blogs.dao.User;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -11,8 +11,13 @@ import org.springframework.stereotype.Component;
 public class UserMapper {
 
     public UserResponse toResponse(User user, long publishedArticleCount) {
-        log.debug("Mapping user: {}", user.getId());
+        return toResponse(user, publishedArticleCount, null, null);
+    }
 
+    public UserResponse toResponse(User user, long publishedArticleCount, Long followersCount, Long followingCount) {
+        log.debug("Mapping user: {}", user.getId());
+        int followers = followersCount != null ? followersCount.intValue() : user.getFollowersCount();
+        int following = followingCount != null ? followingCount.intValue() : user.getFollowingCount();
         return new UserResponse(
                 user.getId(),
                 user.getUsername(),
@@ -27,8 +32,8 @@ public class UserMapper {
                 user.getWebsiteUrl(),
                 user.getTechTags(),
                 user.isVerified(),
-                user.getFollowersCount(),
-                user.getFollowingCount(),
+                followers,
+                following,
                 publishedArticleCount,
                 user.getCreatedAt()
         );

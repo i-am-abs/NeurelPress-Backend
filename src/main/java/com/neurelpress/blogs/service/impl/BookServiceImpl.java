@@ -1,9 +1,9 @@
 package com.neurelpress.blogs.service.impl;
 
 import com.neurelpress.blogs.constants.CodeConstants;
+import com.neurelpress.blogs.dao.Book;
 import com.neurelpress.blogs.dto.response.BookResponse;
 import com.neurelpress.blogs.dto.response.PageResponse;
-import com.neurelpress.blogs.dao.Book;
 import com.neurelpress.blogs.exception.ResourceNotFoundException;
 import com.neurelpress.blogs.mapper.BookMapper;
 import com.neurelpress.blogs.repository.BookRepository;
@@ -59,6 +59,14 @@ public class BookServiceImpl implements BookService {
     public PageResponse<BookResponse> searchBooks(String query, int page, int size) {
         Page<Book> p = bookRepository.search(query, Pageable.ofSize(size).withPage(page));
         log.info("Searching books with query {} and page {} and size {}", query, page, size);
+        return PageResponseSupport.from(p, bookMapper::toResponse);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PageResponse<BookResponse> getBooksByCategory(String category, int page, int size) {
+        Page<Book> p = bookRepository.findByCategory(category, Pageable.ofSize(size).withPage(page));
+        log.info("Getting books by category {} with page {} and size {}", category, page, size);
         return PageResponseSupport.from(p, bookMapper::toResponse);
     }
 }

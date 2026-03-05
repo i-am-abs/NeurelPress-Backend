@@ -16,4 +16,5 @@ public record BookResponse(
         double rating,
 
         String referencedCount
-) implements Serializable {}
+) implements Serializable {
+}

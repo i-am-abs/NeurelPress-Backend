@@ -2,8 +2,8 @@ package com.neurelpress.blogs.controller;
 
 import com.neurelpress.blogs.constants.ApiConstants;
 import com.neurelpress.blogs.constants.CodeConstants;
-import com.neurelpress.blogs.dto.response.UserResponse;
 import com.neurelpress.blogs.dto.response.PageResponse;
+import com.neurelpress.blogs.dto.response.UserResponse;
 import com.neurelpress.blogs.security.UserPrincipal;
 import com.neurelpress.blogs.service.FollowService;
 import com.neurelpress.blogs.service.UserService;
@@ -13,14 +13,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 import java.util.UUID;
@@ -91,5 +84,25 @@ public class UserController {
         return ResponseEntity.ok(Map.of(CodeConstants.FOLLOWING, followService.isFollowing(
                 userPrincipal.getId(), userId
         )));
+    }
+
+    @GetMapping("/{userId}/followers")
+    @Operation(summary = "Get paginated list of users who follow this user")
+    public ResponseEntity<PageResponse<UserResponse>> getFollowers(
+            @PathVariable UUID userId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "12") int size) {
+        log.info("Getting followers for user: {} with page {} and size {}", userId, page, size);
+        return ResponseEntity.ok(followService.getFollowers(userId, page, size));
+    }
+
+    @GetMapping("/{userId}/follows")
+    @Operation(summary = "Get paginated list of users this user follows")
+    public ResponseEntity<PageResponse<UserResponse>> getFollowing(
+            @PathVariable UUID userId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "12") int size) {
+        log.info("Getting following list for user: {} with page {} and size {}", userId, page, size);
+        return ResponseEntity.ok(followService.getFollowing(userId, page, size));
     }
 }

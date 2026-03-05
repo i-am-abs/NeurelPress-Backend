@@ -2,8 +2,8 @@ package com.neurelpress.blogs.security.oauth2;
 
 import com.neurelpress.blogs.constants.ApiConstants;
 import com.neurelpress.blogs.constants.CodeConstants;
-import com.neurelpress.blogs.dao.User;
 import com.neurelpress.blogs.constants.enums.AuthProvider;
+import com.neurelpress.blogs.dao.User;
 import com.neurelpress.blogs.repository.UserRepository;
 import com.neurelpress.blogs.security.jwt.JwtTokenProvider;
 import jakarta.servlet.http.HttpServletRequest;

@@ -1,7 +1,7 @@
 package com.neurelpress.blogs.repository;
 
-import com.neurelpress.blogs.dao.Article;
 import com.neurelpress.blogs.constants.enums.ArticleStatus;
+import com.neurelpress.blogs.dao.Article;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;

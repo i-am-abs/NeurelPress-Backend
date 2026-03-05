@@ -1,26 +1,23 @@
 package com.neurelpress.blogs.service.impl;
 
 import com.neurelpress.blogs.constants.CodeConstants;
+import com.neurelpress.blogs.constants.enums.ArticleStatus;
+import com.neurelpress.blogs.dao.User;
+import com.neurelpress.blogs.dao.Tag;
+import com.neurelpress.blogs.dao.Book;
+import com.neurelpress.blogs.dao.Article;
+import com.neurelpress.blogs.dao.ArticleClap;
 import com.neurelpress.blogs.dto.request.ArticleRequest;
 import com.neurelpress.blogs.dto.response.ArticleResponse;
 import com.neurelpress.blogs.dto.response.ArticleSummaryResponse;
 import com.neurelpress.blogs.dto.response.PageResponse;
-import com.neurelpress.blogs.dao.Article;
-import com.neurelpress.blogs.dao.ArticleClap;
-import com.neurelpress.blogs.dao.Book;
-import com.neurelpress.blogs.dao.Tag;
-import com.neurelpress.blogs.dao.User;
-import com.neurelpress.blogs.constants.enums.ArticleStatus;
 import com.neurelpress.blogs.exception.ResourceNotFoundException;
 import com.neurelpress.blogs.exception.UnauthorizedException;
 import com.neurelpress.blogs.mapper.ArticleMapper;
-import com.neurelpress.blogs.repository.ArticleClapRepository;
-import com.neurelpress.blogs.repository.ArticleRepository;
-import com.neurelpress.blogs.repository.BookRepository;
-import com.neurelpress.blogs.repository.TagRepository;
-import com.neurelpress.blogs.repository.UserRepository;
+import com.neurelpress.blogs.repository.*;
 import com.neurelpress.blogs.service.AiSuggestionsService;
 import com.neurelpress.blogs.service.ArticleService;
+import com.neurelpress.blogs.service.BookmarkService;
 import com.neurelpress.blogs.utils.PageResponseSupport;
 import com.neurelpress.blogs.utils.SlugUtils;
 import lombok.RequiredArgsConstructor;
@@ -51,6 +48,17 @@ public class ArticleServiceImpl implements ArticleService {
     private final BookRepository bookRepository;
     private final ArticleMapper articleMapper;
     private final AiSuggestionsService aiSuggestionsService;
+    private final BookmarkService bookmarkService;
+
+    private static int computeReadTime(String content) {
+        if (content == null || content.isBlank()) {
+            return 0;
+        }
+        int words = content.trim().split("\\s+").length;
+        int minutes = Math.max(1, words / WORDS_PER_MINUTE);
+        log.debug("Computed read time: {} words -> {} min", words, minutes);
+        return minutes;
+    }
 
     @Override
     @Transactional
@@ -119,7 +127,6 @@ public class ArticleServiceImpl implements ArticleService {
             throw new UnauthorizedException("Not authorized to publish this article");
         }
 
-        // If the author didn't choose tags, let the active AI provider suggest some.
         if (article.getTags().isEmpty() && article.getContent() != null && !article.getContent().isBlank()) {
             try {
                 var suggestedSlugs = aiSuggestionsService.suggestTags(article.getTitle(), article.getContent());
@@ -145,11 +152,25 @@ public class ArticleServiceImpl implements ArticleService {
 
     @Override
     @Transactional(readOnly = true)
-    public ArticleResponse getArticleBySlug(String slug) {
-        Article article = articleRepository.findPublishedBySlug(slug)
+    public ArticleResponse getArticleBySlug(UUID viewerId, String slug) {
+        if (viewerId == null) {
+            Article published = articleRepository.findPublishedBySlug(slug)
+                    .orElseThrow(() -> new ResourceNotFoundException(CodeConstants.Article, CodeConstants.SLUG, slug));
+            log.info("Article viewed: {}", slug);
+            return articleMapper.toResponse(published, null);
+        }
+
+        Article article = articleRepository.findBySlug(slug)
                 .orElseThrow(() -> new ResourceNotFoundException(CodeConstants.Article, CodeConstants.SLUG, slug));
+
+        if (article.getStatus() != ArticleStatus.PUBLISHED
+                && !article.getAuthor().getId().equals(viewerId)) {
+            throw new ResourceNotFoundException(CodeConstants.Article, CodeConstants.SLUG, slug);
+        }
+
+        Boolean bookmarked = bookmarkService.isBookmarked(viewerId, article.getId());
         log.info("Article viewed: {}", slug);
-        return articleMapper.toResponse(article);
+        return articleMapper.toResponse(article, bookmarked);
     }
 
     @Override
@@ -196,6 +217,14 @@ public class ArticleServiceImpl implements ArticleService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public PageResponse<ArticleSummaryResponse> getArticlesByAuthorAllStatus(UUID authorId, int page, int size) {
+        Page<Article> p = articleRepository.findByAuthorIdOrderByCreatedAtDesc(authorId, Pageable.ofSize(size).withPage(page));
+        log.info("Getting all articles by author {} with page {} and size {}", authorId, page, size);
+        return PageResponseSupport.from(p, articleMapper::toSummaryResponse);
+    }
+
+    @Override
     @Transactional
     public void deleteArticle(UUID authorId, String slug) {
         Article article = articleRepository.findBySlug(slug)
@@ -211,7 +240,7 @@ public class ArticleServiceImpl implements ArticleService {
     public void clapArticle(UUID userId, String slug) {
         Article article = articleRepository.findPublishedBySlug(slug)
                 .orElseThrow(() -> new ResourceNotFoundException(CodeConstants.Article, CodeConstants.SLUG, slug));
-        if (articleClapRepository.existsByUserIdAndArticleId(userId, article.getId())) {
+        if (articleClapRepository.findByUserIdAndArticleId(userId, article.getId()).isPresent()) {
             log.debug("User {} already clapped article {}", userId, slug);
             return;
         }
@@ -247,15 +276,5 @@ public class ArticleServiceImpl implements ArticleService {
         }
         log.info("Resolved {} books: {}", bookIds.size(), String.join(", ", bookIds.toString()));
         return new HashSet<>(bookRepository.findAllById(bookIds));
-    }
-
-    private static int computeReadTime(String content) {
-        if (content == null || content.isBlank()) {
-            return 0;
-        }
-        int words = content.trim().split("\\s+").length;
-        int minutes = Math.max(1, words / WORDS_PER_MINUTE);
-        log.debug("Computed read time: {} words -> {} min", words, minutes);
-        return minutes;
     }
 }

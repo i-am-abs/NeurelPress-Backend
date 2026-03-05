@@ -1,10 +1,8 @@
 package com.neurelpress.blogs.security;
 
 import com.neurelpress.blogs.dao.User;
-
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;

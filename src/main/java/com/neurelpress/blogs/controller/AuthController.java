@@ -2,11 +2,7 @@ package com.neurelpress.blogs.controller;
 
 import com.neurelpress.blogs.constants.ApiConstants;
 import com.neurelpress.blogs.constants.CodeConstants;
-import com.neurelpress.blogs.dto.request.LoginRequest;
-import com.neurelpress.blogs.dto.request.OtpLoginRequest;
-import com.neurelpress.blogs.dto.request.OtpRequest;
-import com.neurelpress.blogs.dto.request.RefreshTokenRequest;
-import com.neurelpress.blogs.dto.request.RegisterRequest;
+import com.neurelpress.blogs.dto.request.*;
 import com.neurelpress.blogs.dto.response.AuthResponse;
 import com.neurelpress.blogs.dto.response.UserResponse;
 import com.neurelpress.blogs.security.UserPrincipal;
@@ -19,12 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
@@ -110,5 +101,19 @@ public class AuthController {
     public ResponseEntity<AuthResponse> loginWithOtp(@Valid @RequestBody OtpLoginRequest request) {
         log.info("Logged with OTP: {}", request);
         return ResponseEntity.ok(authService.loginWithOtp(request));
+    }
+
+    @PostMapping("/forgot-password")
+    @Operation(summary = "Request password reset email")
+    public ResponseEntity<Map<String, String>> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        authService.requestPasswordReset(request.email());
+        return ResponseEntity.ok(Map.of(CodeConstants.MESSAGE, CodeConstants.PASSWORD_RESET_EMAIL_SENT));
+    }
+
+    @PostMapping("/reset-password")
+    @Operation(summary = "Reset password with token from email")
+    public ResponseEntity<Map<String, String>> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        authService.resetPassword(request.token(), request.newPassword());
+        return ResponseEntity.ok(Map.of(CodeConstants.MESSAGE, CodeConstants.PASSWORD_RESET_SUCCESSFUL));
     }
 }

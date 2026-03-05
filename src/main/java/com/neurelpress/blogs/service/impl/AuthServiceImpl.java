@@ -1,30 +1,32 @@
 package com.neurelpress.blogs.service.impl;
 
 import com.neurelpress.blogs.constants.CodeConstants;
+import com.neurelpress.blogs.constants.enums.AuthProvider;
+import com.neurelpress.blogs.dao.User;
+import com.neurelpress.blogs.dao.EmailVerificationToken;
+import com.neurelpress.blogs.dao.PasswordResetToken;
+import com.neurelpress.blogs.dao.RefreshToken;
+import com.neurelpress.blogs.dao.EmailOtp;
 import com.neurelpress.blogs.dto.request.LoginRequest;
 import com.neurelpress.blogs.dto.request.OtpLoginRequest;
-import com.neurelpress.blogs.dto.request.OtpRequest;
 import com.neurelpress.blogs.dto.request.RefreshTokenRequest;
 import com.neurelpress.blogs.dto.request.RegisterRequest;
+import com.neurelpress.blogs.dto.request.OtpRequest;
 import com.neurelpress.blogs.dto.response.AuthResponse;
 import com.neurelpress.blogs.dto.response.UserResponse;
-import com.neurelpress.blogs.dao.EmailOtp;
-import com.neurelpress.blogs.dao.EmailVerificationToken;
-import com.neurelpress.blogs.dao.RefreshToken;
-import com.neurelpress.blogs.dao.User;
-import com.neurelpress.blogs.constants.enums.AuthProvider;
 import com.neurelpress.blogs.exception.DuplicateResourceException;
 import com.neurelpress.blogs.exception.ResourceNotFoundException;
 import com.neurelpress.blogs.exception.UnauthorizedException;
 import com.neurelpress.blogs.mapper.UserMapper;
-import com.neurelpress.blogs.repository.ArticleRepository;
-import com.neurelpress.blogs.repository.EmailOtpRepository;
 import com.neurelpress.blogs.repository.EmailVerificationTokenRepository;
 import com.neurelpress.blogs.repository.RefreshTokenRepository;
 import com.neurelpress.blogs.repository.UserRepository;
+import com.neurelpress.blogs.repository.PasswordResetTokenRepository;
+import com.neurelpress.blogs.repository.EmailOtpRepository;
 import com.neurelpress.blogs.security.jwt.JwtTokenProvider;
 import com.neurelpress.blogs.service.AuthService;
 import com.neurelpress.blogs.service.EmailService;
+import com.neurelpress.blogs.service.UserService;
 import com.neurelpress.blogs.utils.SecureTokenGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -43,9 +45,10 @@ import java.util.concurrent.ThreadLocalRandom;
 public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
-    private final ArticleRepository articleRepository;
+    private final UserService userService;
     private final RefreshTokenRepository refreshTokenRepository;
     private final EmailVerificationTokenRepository emailVerificationTokenRepository;
+    private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final EmailOtpRepository emailOtpRepository;
     private final EmailService emailService;
     private final PasswordEncoder passwordEncoder;
@@ -93,7 +96,7 @@ public class AuthServiceImpl implements AuthService {
         User user = userRepository.findByEmail(request.email())
                 .orElseThrow(() -> new UnauthorizedException("Invalid email or password"));
 
-        if(user.getProvider() != AuthProvider.LOCAL) {
+        if (user.getProvider() != AuthProvider.LOCAL) {
             throw new UnauthorizedException("Invalid email or password");
         }
 
@@ -142,7 +145,7 @@ public class AuthServiceImpl implements AuthService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException(CodeConstants.USER, CodeConstants.ID, userId));
         log.info("User fetched: {}", user.getEmail());
-        long publishedCount = articleRepository.countPublishedByAuthor(user.getId());
+        long publishedCount = userService.getPublishedArticleCount(user.getId());
         return userMapper.toResponse(user, publishedCount);
     }
 
@@ -235,6 +238,43 @@ public class AuthServiceImpl implements AuthService {
         return buildAuthResponse(user);
     }
 
+    @Override
+    @Transactional
+    public void requestPasswordReset(String email) {
+        userRepository.findByEmail(email).ifPresent(user -> {
+            if (user.getProvider() != AuthProvider.LOCAL) {
+                return;
+            }
+            passwordResetTokenRepository.deleteByUserIdOrExpired(user.getId(), Instant.now());
+            String token = SecureTokenGenerator.generateHexToken();
+            PasswordResetToken prToken = PasswordResetToken.builder()
+                    .token(token)
+                    .user(user)
+                    .expiresAt(Instant.now().plusSeconds(CodeConstants.PASSWORD_RESET_EXPIRE_HOURS * 3600L))
+                    .build();
+            passwordResetTokenRepository.save(prToken);
+            emailService.sendPasswordResetEmail(user.getEmail(), user.getDisplayName(), token);
+            log.info("Password reset email sent to {}", email);
+        });
+    }
+
+    @Override
+    @Transactional
+    public void resetPassword(String token, String newPassword) {
+        PasswordResetToken prToken = passwordResetTokenRepository.findByTokenAndUsedFalse(token)
+                .orElseThrow(() -> new UnauthorizedException("Invalid or expired reset link"));
+        if (prToken.getExpiresAt().isBefore(Instant.now())) {
+            throw new UnauthorizedException("Reset link has expired");
+        }
+        User user = prToken.getUser();
+        user.setPasswordHash(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+        prToken.setUsed(true);
+        passwordResetTokenRepository.save(prToken);
+        passwordResetTokenRepository.deleteByUserIdOrExpired(user.getId(), Instant.now());
+        log.info("Password reset completed for user: {}", user.getEmail());
+    }
+
     private AuthResponse buildAuthResponse(User user) {
         String accessToken = tokenProvider.generateAccessToken(user.getId(), user.getEmail(), user.getRole().name());
         String refreshTokenStr = tokenProvider.generateRefreshToken();
@@ -246,7 +286,7 @@ public class AuthServiceImpl implements AuthService {
                 .build();
         refreshTokenRepository.save(refreshToken);
         log.info("New refresh token created: {}", refreshTokenStr);
-        long publishedCount = articleRepository.countPublishedByAuthor(user.getId());
+        long publishedCount = userService.getPublishedArticleCount(user.getId());
         return new AuthResponse(accessToken, refreshTokenStr, CodeConstants.BEARER,
                 tokenProvider.getAccessExpirationMs() / 1000, userMapper.toResponse(user, publishedCount));
     }

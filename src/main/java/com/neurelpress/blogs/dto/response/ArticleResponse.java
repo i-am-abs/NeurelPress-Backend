@@ -30,7 +30,9 @@ public record ArticleResponse(
 
         AuthorSummary author,
         List<TagResponse> tags,
-        List<BookResponse> books
+        List<BookResponse> books,
+
+        Boolean bookmarked
 ) {
     public record AuthorSummary(
             UUID id,
@@ -39,5 +41,6 @@ public record ArticleResponse(
             String displayName,
             String avatarUrl,
             String bio
-    ) {}
+    ) {
+    }
 }

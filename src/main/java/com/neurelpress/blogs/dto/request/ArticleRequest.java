@@ -27,4 +27,5 @@ public record ArticleRequest(
         String seoDescription,
 
         String canonicalUrl
-) {}
+) {
+}

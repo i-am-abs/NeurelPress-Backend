@@ -11,4 +11,5 @@ public record TagResponse(
         String description,
 
         int articleCount
-) implements Serializable {}
+) implements Serializable {
+}

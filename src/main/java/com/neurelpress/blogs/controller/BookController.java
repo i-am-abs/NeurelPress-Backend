@@ -9,11 +9,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.UUID;
@@ -52,6 +48,16 @@ public class BookController {
             @RequestParam(defaultValue = "12") int size) {
         log.info("Searching books with query: {}, page: {}, size: {}", q, page, size);
         return ResponseEntity.ok(bookService.searchBooks(q, page, size));
+    }
+
+    @GetMapping("/category/{category}")
+    @Operation(summary = "Get books by category (paginated)")
+    public ResponseEntity<PageResponse<BookResponse>> getBooksByCategory(
+            @PathVariable String category,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "12") int size) {
+        log.info("Getting books by category: {} with page {} and size {}", category, page, size);
+        return ResponseEntity.ok(bookService.getBooksByCategory(category, page, size));
     }
 
     @GetMapping("/{id}")

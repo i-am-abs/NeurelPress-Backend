@@ -30,6 +30,8 @@ public final class CodeConstants {
     public static final String EMAIL_VERIFICATION_SUCCESSFUL = "Email verified successfully";
     public static final String EMAIL_VERIFICATION_FAILED = "Email verification failed";
     public static final String EMAIL_VERIFICATION_SENT = "Verification email sent";
+    public static final String PASSWORD_RESET_EMAIL_SENT = "If an account exists with this email, you will receive a reset link";
+    public static final String PASSWORD_RESET_SUCCESSFUL = "Password has been reset successfully";
 
     public static final String TAG_SUGGESTION_PROMPT = """
             You are an expert at tagging technical and AI/ML articles for a scientific publishing platform.
@@ -59,6 +61,7 @@ public final class CodeConstants {
     public static final Integer REDIS_CACHE_TTL = 30;
     public static final Integer WORDS_PER_MINUTE = 200;
     public static final Integer EMAIL_VERIFICATION_EXPIRE_HOURS = 24;
+    public static final int PASSWORD_RESET_EXPIRE_HOURS = 1;
 
     private CodeConstants() {
         throw new UnsupportedOperationException("Constant class cannot be instantiated");

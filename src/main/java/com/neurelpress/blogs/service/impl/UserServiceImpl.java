@@ -1,23 +1,24 @@
 package com.neurelpress.blogs.service.impl;
 
 import com.neurelpress.blogs.constants.CodeConstants;
-import com.neurelpress.blogs.dto.response.UserResponse;
-import com.neurelpress.blogs.dto.response.PageResponse;
 import com.neurelpress.blogs.dao.User;
+import com.neurelpress.blogs.dto.response.PageResponse;
+import com.neurelpress.blogs.dto.response.UserResponse;
 import com.neurelpress.blogs.exception.ResourceNotFoundException;
 import com.neurelpress.blogs.mapper.UserMapper;
 import com.neurelpress.blogs.repository.ArticleRepository;
 import com.neurelpress.blogs.repository.UserRepository;
+import com.neurelpress.blogs.service.FollowService;
 import com.neurelpress.blogs.service.UserService;
 import com.neurelpress.blogs.utils.PageResponseSupport;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 
 @Slf4j
 @Service
@@ -26,6 +27,7 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final ArticleRepository articleRepository;
+    private final FollowService followService;
     private final UserMapper userMapper;
 
     @Override
@@ -34,7 +36,9 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException(CodeConstants.USER, CodeConstants.USERNAME, username));
         long publishedCount = articleRepository.countPublishedByAuthor(user.getId());
-        return userMapper.toResponse(user, publishedCount);
+        long followersCount = followService.getFollowerCount(user.getId());
+        long followingCount = followService.getFollowingCount(user.getId());
+        return userMapper.toResponse(user, publishedCount, followersCount, followingCount);
     }
 
     @Override
@@ -76,8 +80,10 @@ public class UserServiceImpl implements UserService {
 
         user = userRepository.save(user);
         long publishedCount = articleRepository.countPublishedByAuthor(user.getId());
+        long followersCount = followService.getFollowerCount(user.getId());
+        long followingCount = followService.getFollowingCount(user.getId());
         log.info("Updated user profile: {}", user.getUsername());
-        return userMapper.toResponse(user, publishedCount);
+        return userMapper.toResponse(user, publishedCount, followersCount, followingCount);
     }
 
     @Override

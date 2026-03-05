@@ -9,7 +9,7 @@ import org.springframework.scheduling.annotation.EnableAsync;
 @EnableCaching
 @SpringBootApplication
 public class NeuralPressBloggingAppApplication {
-	public static void main(String[] args) {
-		SpringApplication.run(NeuralPressBloggingAppApplication.class, args);
-	}
+    public static void main(String[] args) {
+        SpringApplication.run(NeuralPressBloggingAppApplication.class, args);
+    }
 }

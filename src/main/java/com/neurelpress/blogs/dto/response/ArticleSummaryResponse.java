@@ -25,4 +25,5 @@ public record ArticleSummaryResponse(
 
         ArticleResponse.AuthorSummary author,
         List<TagResponse> tags
-) implements Serializable {}
+) implements Serializable {
+}

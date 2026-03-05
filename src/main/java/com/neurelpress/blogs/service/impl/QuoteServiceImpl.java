@@ -1,7 +1,7 @@
 package com.neurelpress.blogs.service.impl;
 
-import com.neurelpress.blogs.dto.response.QuoteResponse;
 import com.neurelpress.blogs.dao.Quote;
+import com.neurelpress.blogs.dto.response.QuoteResponse;
 import com.neurelpress.blogs.repository.QuoteRepository;
 import com.neurelpress.blogs.service.QuoteService;
 import lombok.RequiredArgsConstructor;

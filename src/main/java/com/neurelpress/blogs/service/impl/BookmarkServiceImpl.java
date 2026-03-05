@@ -1,11 +1,11 @@
 package com.neurelpress.blogs.service.impl;
 
 import com.neurelpress.blogs.constants.CodeConstants;
-import com.neurelpress.blogs.dto.response.ArticleSummaryResponse;
-import com.neurelpress.blogs.dto.response.PageResponse;
 import com.neurelpress.blogs.dao.Article;
 import com.neurelpress.blogs.dao.Bookmark;
 import com.neurelpress.blogs.dao.User;
+import com.neurelpress.blogs.dto.response.ArticleSummaryResponse;
+import com.neurelpress.blogs.dto.response.PageResponse;
 import com.neurelpress.blogs.exception.ResourceNotFoundException;
 import com.neurelpress.blogs.mapper.ArticleMapper;
 import com.neurelpress.blogs.repository.ArticleRepository;
@@ -45,6 +45,8 @@ public class BookmarkServiceImpl implements BookmarkService {
         bookmarkRepository
                 .findByUserIdAndArticleId(userId, article.getId()).ifPresentOrElse(bookmarkRepository::delete,
                         () -> bookmarkRepository.save(Bookmark.builder().user(user).article(article).build()));
+        article.setBookmarksCount((int) bookmarkRepository.countByArticleId(article.getId()));
+        articleRepository.save(article);
         log.info("Bookmark toggled: {} by {}", slug, userId);
     }
 

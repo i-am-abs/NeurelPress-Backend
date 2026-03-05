@@ -8,4 +8,5 @@ public record AuthResponse(
         long expiresIn,
 
         UserResponse user
-) {}
+) {
+}

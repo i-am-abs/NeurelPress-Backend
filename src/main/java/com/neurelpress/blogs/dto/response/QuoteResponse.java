@@ -9,4 +9,5 @@ public record QuoteResponse(
         String text,
         String author,
         String source
-) implements Serializable {}
+) implements Serializable {
+}

@@ -1,8 +1,8 @@
 package com.neurelpress.blogs.controller;
 
 import com.neurelpress.blogs.constants.ApiConstants;
-import com.neurelpress.blogs.dao.Article;
 import com.neurelpress.blogs.constants.enums.ArticleStatus;
+import com.neurelpress.blogs.dao.Article;
 import com.neurelpress.blogs.repository.ArticleRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;

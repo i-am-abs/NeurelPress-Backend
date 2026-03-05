@@ -15,15 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
@@ -53,12 +45,28 @@ public class ArticleController {
         return ResponseEntity.ok(articleService.getDraftsByAuthor(userPrincipal.getId(), page, size));
     }
 
+    @GetMapping("/me/all")
+    @Operation(summary = "Get current user's all articles (drafts and published, by created date)")
+    public ResponseEntity<PageResponse<ArticleSummaryResponse>> getMyArticles(@AuthenticationPrincipal UserPrincipal userPrincipal,
+                                                                              @RequestParam(defaultValue = "0") int page,
+                                                                              @RequestParam(defaultValue = "12") int size) {
+        log.info("Getting all articles for user {} with page {} and size {}", userPrincipal.getId(), page, size);
+        return ResponseEntity.ok(articleService.getArticlesByAuthorAllStatus(userPrincipal.getId(), page, size));
+    }
+
     @GetMapping("/{slug}")
-    @Operation(summary = "Get a published article by slug")
-    public ResponseEntity<ArticleResponse> getArticle(@PathVariable String slug) {
+    @Operation(summary = "Get an article by slug")
+    public ResponseEntity<ArticleResponse> getArticle(
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
+            @PathVariable String slug) {
         articleService.recordView(slug);
         log.info("Article viewed: {}", slug);
-        return ResponseEntity.ok(articleService.getArticleBySlug(slug));
+        return ResponseEntity.ok(
+                articleService.getArticleBySlug(
+                        userPrincipal != null ? userPrincipal.getId() : null,
+                        slug
+                )
+        );
     }
 
     @GetMapping("/tag/{tagSlug}")
