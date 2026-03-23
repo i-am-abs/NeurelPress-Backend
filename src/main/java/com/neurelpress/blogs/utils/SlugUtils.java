@@ -2,6 +2,7 @@ package com.neurelpress.blogs.utils;
 
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.NonNull;
 
 import java.text.Normalizer;
 import java.util.Locale;
@@ -10,7 +11,7 @@ import java.util.Locale;
 @NoArgsConstructor
 public final class SlugUtils {
 
-    public static String toSlug(String input) {
+    public static @NonNull String toSlug(String input) {
         if (input == null || input.isBlank()) {
             return "";
         }

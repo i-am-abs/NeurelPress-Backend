@@ -3,6 +3,8 @@ package com.neurelpress.blogs.utils;
 import com.neurelpress.blogs.dto.response.PageResponse;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.Contract;
+import org.jspecify.annotations.NonNull;
 import org.springframework.data.domain.Page;
 
 import java.util.List;
@@ -12,7 +14,8 @@ import java.util.function.Function;
 @NoArgsConstructor
 public final class PageResponseSupport {
 
-    public static <T, R> PageResponse<R> from(Page<T> page, Function<T, R> mapper) {
+    @Contract("_, _ -> new")
+    public static <T, R> @NonNull PageResponse<R> from(@NonNull Page<T> page, Function<T, R> mapper) {
         List<R> content = page.getContent()
                 .stream()
                 .map(mapper)

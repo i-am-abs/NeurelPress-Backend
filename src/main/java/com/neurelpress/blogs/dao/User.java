@@ -102,4 +102,9 @@ public class User {
 
     @UpdateTimestamp
     private Instant updatedAt;
+
+    private Instant lastSignInAt;
+
+    @Enumerated(EnumType.STRING)
+    private AuthProvider lastSignInVia;
 }

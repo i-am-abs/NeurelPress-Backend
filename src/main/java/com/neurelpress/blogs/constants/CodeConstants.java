@@ -15,6 +15,7 @@ public final class CodeConstants {
     public static final String SUMMARY = "Summary";
     public static final String FOLLOWING = "following";
     public static final String TOKEN = "token";
+    public static final String REFRESH_TOKEN = "refreshToken";
     public static final String MESSAGE = "message";
     public static final String USER = "user";
     public static final String USERNAME = "username";

@@ -3,6 +3,7 @@ package com.neurelpress.blogs.mapper;
 import com.neurelpress.blogs.dao.Book;
 import com.neurelpress.blogs.dto.response.BookResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.NonNull;
 import org.springframework.stereotype.Component;
 
 import java.util.Set;
@@ -12,7 +13,7 @@ import java.util.stream.Collectors;
 @Component
 public class BookMapper {
 
-    public BookResponse toResponse(Book book) {
+    public BookResponse toResponse(@NonNull Book book) {
         log.debug("Mapping book: {}", book.getId());
         return new BookResponse(
                 book.getId(),

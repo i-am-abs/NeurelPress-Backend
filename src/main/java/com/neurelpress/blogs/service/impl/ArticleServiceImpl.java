@@ -22,6 +22,8 @@ import com.neurelpress.blogs.utils.PageResponseSupport;
 import com.neurelpress.blogs.utils.SlugUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.Contract;
+import org.jspecify.annotations.NonNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -62,7 +64,7 @@ public class ArticleServiceImpl implements ArticleService {
 
     @Override
     @Transactional
-    public ArticleResponse createArticle(UUID authorId, ArticleRequest request) {
+    public ArticleResponse createArticle(UUID authorId, @NonNull ArticleRequest request) {
         User author = userRepository.findById(authorId)
                 .orElseThrow(() -> new ResourceNotFoundException(CodeConstants.USER, CodeConstants.ID, authorId));
 
@@ -260,7 +262,8 @@ public class ArticleServiceImpl implements ArticleService {
         return slug;
     }
 
-    private Set<Tag> resolveTags(List<String> tagSlugs) {
+    @Contract("null -> new")
+    private @NonNull Set<Tag> resolveTags(List<String> tagSlugs) {
         if (tagSlugs == null || tagSlugs.isEmpty()) return new HashSet<>();
         List<Tag> found = tagRepository.findBySlugIn(tagSlugs);
         if (found.size() != tagSlugs.size()) {
@@ -270,7 +273,8 @@ public class ArticleServiceImpl implements ArticleService {
         return new HashSet<>(found);
     }
 
-    private Set<Book> resolveBooks(List<UUID> bookIds) {
+    @Contract("null -> new")
+    private @NonNull Set<Book> resolveBooks(List<UUID> bookIds) {
         if (bookIds == null || bookIds.isEmpty()) {
             return new HashSet<>();
         }

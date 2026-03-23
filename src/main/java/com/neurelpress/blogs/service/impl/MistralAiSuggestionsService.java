@@ -6,6 +6,7 @@ import com.neurelpress.blogs.constants.CodeConstants;
 import com.neurelpress.blogs.service.AiSuggestionsService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.NonNull;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -34,7 +35,7 @@ public class MistralAiSuggestionsService implements AiSuggestionsService {
     @Value("${neuralpress.mistral.model:mistral-small-latest}")
     private String model;
 
-    private static String truncate(String s, int max) {
+    private static @NonNull String truncate(String s, int max) {
         if (s == null) return "";
         return s.length() <= max ? s : s.substring(0, max);
     }
@@ -73,7 +74,7 @@ public class MistralAiSuggestionsService implements AiSuggestionsService {
     }
 
     @SuppressWarnings("unchecked")
-    private String generateContent(String prompt) {
+    private @NonNull String generateContent(String prompt) {
         try {
             Map<String, Object> body = Map.of(
                     "model", model,
@@ -94,7 +95,7 @@ public class MistralAiSuggestionsService implements AiSuggestionsService {
         }
     }
 
-    private String extractTextFromResponse(String json) {
+    private @NonNull String extractTextFromResponse(String json) {
         try {
             JsonNode root = objectMapper.readTree(json);
             JsonNode choices = root.path("choices");

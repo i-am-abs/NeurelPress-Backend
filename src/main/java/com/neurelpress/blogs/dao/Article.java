@@ -104,12 +104,16 @@ public class Article {
     private Instant publishedAt;
 
     @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(name = "article_tags", joinColumns = @JoinColumn(name = "article_id"), inverseJoinColumns = @JoinColumn(name = "tag_id"))
+    @JoinTable(name = "article_tags",
+            joinColumns = @JoinColumn(name = "article_id"),
+            inverseJoinColumns = @JoinColumn(name = "tag_id"))
     @Builder.Default
     private Set<Tag> tags = new HashSet<>();
 
     @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(name = "article_books", joinColumns = @JoinColumn(name = "article_id"), inverseJoinColumns = @JoinColumn(name = "book_id"))
+    @JoinTable(name = "article_books",
+            joinColumns = @JoinColumn(name = "article_id"),
+            inverseJoinColumns = @JoinColumn(name = "book_id"))
     @Builder.Default
     private Set<Book> books = new HashSet<>();
 

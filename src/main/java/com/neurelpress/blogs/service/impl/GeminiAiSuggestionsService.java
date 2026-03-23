@@ -6,6 +6,7 @@ import com.neurelpress.blogs.constants.CodeConstants;
 import com.neurelpress.blogs.service.AiSuggestionsService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.NonNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.MediaType;
@@ -32,7 +33,7 @@ public class GeminiAiSuggestionsService implements AiSuggestionsService {
     @Value("${neuralpress.gemini.model:gemini-1.5-flash}")
     private String model;
 
-    private static String truncate(String s, int max) {
+    private static @NonNull String truncate(String s, int max) {
 
         if (s == null) {
             return "";
@@ -93,7 +94,7 @@ public class GeminiAiSuggestionsService implements AiSuggestionsService {
         return apiKey == null || apiKey.isBlank();
     }
 
-    private String generateContent(String prompt) {
+    private @NonNull String generateContent(String prompt) {
         try {
 
             Map<String, Object> body = Map.of(
@@ -130,7 +131,7 @@ public class GeminiAiSuggestionsService implements AiSuggestionsService {
         }
     }
 
-    private String extractTextFromResponse(String json) {
+    private @NonNull String extractTextFromResponse(String json) {
 
         try {
 

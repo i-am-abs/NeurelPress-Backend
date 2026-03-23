@@ -1,5 +1,8 @@
 package com.neurelpress.blogs.security.oauth2;
 
+import org.jetbrains.annotations.Contract;
+import org.jspecify.annotations.NonNull;
+
 import java.util.Map;
 
 public record OAuth2UserInfo(
@@ -8,7 +11,8 @@ public record OAuth2UserInfo(
         String email,
         String avatarUrl
 ) {
-    public static OAuth2UserInfo fromGoogle(Map<String, Object> attributes) {
+    @Contract("_ -> new")
+    public static @NonNull OAuth2UserInfo fromGoogle(@NonNull Map<String, Object> attributes) {
         return new OAuth2UserInfo(
                 (String) attributes.get("sub"),
                 (String) attributes.get("name"),
@@ -17,7 +21,8 @@ public record OAuth2UserInfo(
         );
     }
 
-    public static OAuth2UserInfo fromGithub(Map<String, Object> attributes) {
+    @Contract("_ -> new")
+    public static @NonNull OAuth2UserInfo fromGithub(@NonNull Map<String, Object> attributes) {
         return new OAuth2UserInfo(
                 String.valueOf(attributes.get("id")),
                 (String) attributes.get("name"),

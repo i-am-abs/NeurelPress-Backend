@@ -3,6 +3,7 @@ package com.neurelpress.blogs.mapper;
 import com.neurelpress.blogs.dao.Tag;
 import com.neurelpress.blogs.dto.response.TagResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.NonNull;
 import org.springframework.stereotype.Component;
 
 import java.util.Set;
@@ -12,7 +13,7 @@ import java.util.stream.Collectors;
 @Component
 public class TagMapper {
 
-    public TagResponse toResponse(Tag tag) {
+    public TagResponse toResponse(@NonNull Tag tag) {
         log.debug("Mapping tag: {}", tag.getSlug());
         return new TagResponse(
                 tag.getId(),

@@ -1,6 +1,7 @@
 package com.neurelpress.blogs.utils;
 
 import lombok.NoArgsConstructor;
+import org.jspecify.annotations.NonNull;
 
 import java.security.SecureRandom;
 
@@ -10,11 +11,11 @@ public final class SecureTokenGenerator {
     private static final int DEFAULT_BYTE_LENGTH = 32;
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
-    public static String generateHexToken() {
+    public static @NonNull String generateHexToken() {
         return generateHexToken(DEFAULT_BYTE_LENGTH);
     }
 
-    public static String generateHexToken(int byteLength) {
+    public static @NonNull String generateHexToken(int byteLength) {
         byte[] bytes = new byte[byteLength];
         SECURE_RANDOM.nextBytes(bytes);
         StringBuilder sb = new StringBuilder(byteLength * 2);

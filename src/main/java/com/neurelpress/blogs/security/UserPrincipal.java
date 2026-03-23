@@ -3,6 +3,8 @@ package com.neurelpress.blogs.security;
 import com.neurelpress.blogs.dao.User;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.jetbrains.annotations.Contract;
+import org.jspecify.annotations.NonNull;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -20,7 +22,8 @@ public class UserPrincipal implements UserDetails {
     private final String password;
     private final String role;
 
-    public static UserPrincipal from(User user) {
+    @Contract("_ -> new")
+    public static @NonNull UserPrincipal from(@NonNull User user) {
         return new UserPrincipal(
                 user.getId(),
                 user.getEmail(),

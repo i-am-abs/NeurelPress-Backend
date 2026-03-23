@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.NonNull;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -26,7 +27,7 @@ public class ArticleMapper {
         return toResponse(article, null);
     }
 
-    public ArticleResponse toResponse(Article article, Boolean bookmarked) {
+    public ArticleResponse toResponse(@NonNull Article article, Boolean bookmarked) {
         log.debug("ArticleMapper.toResponse: {}", article.getId());
         return new ArticleResponse(
                 article.getId(),
@@ -54,7 +55,7 @@ public class ArticleMapper {
         );
     }
 
-    public ArticleSummaryResponse toSummaryResponse(Article article) {
+    public ArticleSummaryResponse toSummaryResponse(@NonNull Article article) {
         log.debug("ArticleMapper.toSummaryResponse: {}", article.getId());
 
         return new ArticleSummaryResponse(

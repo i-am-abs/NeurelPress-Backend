@@ -4,12 +4,14 @@ import com.neurelpress.blogs.constants.ApiConstants;
 import com.neurelpress.blogs.constants.CodeConstants;
 import com.neurelpress.blogs.constants.enums.AuthProvider;
 import com.neurelpress.blogs.dao.User;
+import com.neurelpress.blogs.dto.response.OAuthTokenPair;
 import com.neurelpress.blogs.repository.UserRepository;
-import com.neurelpress.blogs.security.jwt.JwtTokenProvider;
+import com.neurelpress.blogs.service.AuthService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.NonNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
@@ -20,6 +22,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 @Slf4j
@@ -27,10 +30,10 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
-    private final JwtTokenProvider tokenProvider;
+    private final AuthService authService;
     private final UserRepository userRepository;
 
-    @Value("${neuralpress.cors.allowed-origins}")
+    @Value("${neuralpress.app.frontend-url}")
     private String frontendUrl;
 
     @Override
@@ -42,26 +45,75 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         String registrationId = oauthToken.getAuthorizedClientRegistrationId();
 
         Map<String, Object> attributes = oAuth2User.getAttributes();
-        OAuth2UserInfo userInfo = AuthProvider.GOOGLE.getAuthProvider().equals(registrationId)
+        boolean isGoogle = AuthProvider.GOOGLE.getAuthProvider().equals(registrationId);
+        OAuth2UserInfo userInfo = isGoogle
                 ? OAuth2UserInfo.fromGoogle(attributes)
                 : OAuth2UserInfo.fromGithub(attributes);
 
-        AuthProvider provider = AuthProvider.GOOGLE.getAuthProvider().equals(registrationId) ? AuthProvider.GOOGLE : AuthProvider.GITHUB;
+        AuthProvider provider = isGoogle ? AuthProvider.GOOGLE : AuthProvider.GITHUB;
 
-        User user = userRepository.findByProviderAndProviderId(provider, userInfo.id())
-                .orElseGet(() -> createOAuthUser(userInfo, provider));
+        if (userInfo.email() == null || userInfo.email().isBlank()) {
+            getRedirectStrategy().sendRedirect(request, response, errorRedirect("oauth_email_required"));
+            log.warn("OAuth login rejected: missing email (provider={})", registrationId);
+            return;
+        }
 
-        String accessToken = tokenProvider.generateAccessToken(user.getId(), user.getEmail(), user.getRole().name());
+        Optional<User> resolved = resolveOAuthUser(request, response, userInfo, provider);
+        if (resolved.isEmpty()) {
+            return;
+        }
+        User user = resolved.get();
 
-        String redirectUrl = UriComponentsBuilder.fromUriString(frontendUrl + ApiConstants.Auth_Callback)
-                .queryParam(CodeConstants.TOKEN, accessToken)
+        applyOAuthProfile(user, userInfo);
+        OAuthTokenPair tokens = authService.finalizeOAuthLogin(user, provider);
+
+        String redirectUrl = UriComponentsBuilder.fromUriString(frontendBase() + ApiConstants.Auth_Callback)
+                .queryParam(CodeConstants.TOKEN, tokens.accessToken())
+                .queryParam(CodeConstants.REFRESH_TOKEN, tokens.refreshToken())
                 .build().toUriString();
 
         getRedirectStrategy().sendRedirect(request, response, redirectUrl);
-        log.info("User logged in successfully: {}", user.getEmail());
+        log.info("OAuth login success: {} via {}", user.getEmail(), provider);
     }
 
-    private User createOAuthUser(OAuth2UserInfo info, AuthProvider provider) {
+    private @NonNull String frontendBase() {
+        return frontendUrl.split(",")[0].trim();
+    }
+
+    private @NonNull String errorRedirect(String code) {
+        return frontendBase() + "/login?error=" + code;
+    }
+
+    private Optional<User> resolveOAuthUser(HttpServletRequest request,
+                                            HttpServletResponse response,
+                                            @NonNull OAuth2UserInfo userInfo,
+                                            AuthProvider provider) throws IOException {
+        Optional<User> linked = userRepository.findByProviderAndProviderId(provider, userInfo.id());
+        if (linked.isPresent()) {
+            return linked;
+        }
+
+        Optional<User> byEmail = userRepository.findByEmail(userInfo.email());
+        if (byEmail.isPresent()) {
+            User existing = byEmail.get();
+            if (existing.getProvider() == AuthProvider.LOCAL) {
+                log.info("OAuth blocked: email {} already uses password login", userInfo.email());
+                getRedirectStrategy().sendRedirect(request, response, errorRedirect("oauth_email_registered"));
+                return Optional.empty();
+            }
+            if (existing.getProvider() != provider) {
+                log.info("OAuth blocked: email {} registered with {}", userInfo.email(), existing.getProvider());
+                getRedirectStrategy().sendRedirect(request, response, errorRedirect("oauth_provider_mismatch"));
+                return Optional.empty();
+            }
+            existing.setProviderId(userInfo.id());
+            return Optional.of(userRepository.save(existing));
+        }
+
+        return Optional.of(createOAuthUser(userInfo, provider));
+    }
+
+    private @NonNull User createOAuthUser(@NonNull OAuth2UserInfo info, AuthProvider provider) {
         String baseUsername = info.name() != null
                 ? info.name().toLowerCase().replaceAll("[^a-z0-9]", "") : CodeConstants.USER;
         String username = baseUsername + "-" + UUID.randomUUID().toString().substring(0, 6);
@@ -75,7 +127,22 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
                 .providerId(info.id())
                 .verified(true)
                 .build();
-        log.info("Created new user: {}", user.getEmail());
+        log.info("Created new OAuth user: {}", user.getEmail());
         return userRepository.save(user);
+    }
+
+    private void applyOAuthProfile(User user, @NonNull OAuth2UserInfo info) {
+        boolean dirty = false;
+        if (info.name() != null && !info.name().isBlank()) {
+            user.setDisplayName(info.name());
+            dirty = true;
+        }
+        if (info.avatarUrl() != null && !info.avatarUrl().isBlank()) {
+            user.setAvatarUrl(info.avatarUrl());
+            dirty = true;
+        }
+        if (dirty) {
+            userRepository.save(user);
+        }
     }
 }

@@ -13,6 +13,7 @@ import com.neurelpress.blogs.dto.request.RefreshTokenRequest;
 import com.neurelpress.blogs.dto.request.RegisterRequest;
 import com.neurelpress.blogs.dto.request.OtpRequest;
 import com.neurelpress.blogs.dto.response.AuthResponse;
+import com.neurelpress.blogs.dto.response.OAuthTokenPair;
 import com.neurelpress.blogs.dto.response.UserResponse;
 import com.neurelpress.blogs.exception.DuplicateResourceException;
 import com.neurelpress.blogs.exception.ResourceNotFoundException;
@@ -30,6 +31,8 @@ import com.neurelpress.blogs.service.UserService;
 import com.neurelpress.blogs.utils.SecureTokenGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.Contract;
+import org.jspecify.annotations.NonNull;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -57,7 +60,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
-    public AuthResponse register(RegisterRequest request) {
+    public AuthResponse register(@NonNull RegisterRequest request) {
         if (userRepository.existsByEmail(request.email())) {
             throw new DuplicateResourceException("Email already registered");
         }
@@ -75,6 +78,7 @@ public class AuthServiceImpl implements AuthService {
                 .build();
 
         user = userRepository.save(user);
+        recordSignIn(user, AuthProvider.LOCAL);
 
         String token = SecureTokenGenerator.generateHexToken();
         EmailVerificationToken evToken = EmailVerificationToken.builder()
@@ -92,7 +96,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
-    public AuthResponse login(LoginRequest request) {
+    public AuthResponse login(@NonNull LoginRequest request) {
         User user = userRepository.findByEmail(request.email())
                 .orElseThrow(() -> new UnauthorizedException("Invalid email or password"));
 
@@ -108,13 +112,14 @@ public class AuthServiceImpl implements AuthService {
             throw new UnauthorizedException("Invalid email or password");
         }
 
+        recordSignIn(user, AuthProvider.LOCAL);
         log.info("User logged in: {}", user.getEmail());
         return buildAuthResponse(user);
     }
 
     @Override
     @Transactional
-    public AuthResponse refreshToken(RefreshTokenRequest request) {
+    public AuthResponse refreshToken(@NonNull RefreshTokenRequest request) {
         RefreshToken storedToken = refreshTokenRepository.findByTokenAndRevokedFalse(request.refreshToken())
                 .orElseThrow(() -> new UnauthorizedException("Invalid refresh token"));
 
@@ -196,7 +201,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
-    public void requestLoginOtp(OtpRequest request) {
+    public void requestLoginOtp(@NonNull OtpRequest request) {
         User user = userRepository.findByEmail(request.email())
                 .orElseThrow(() -> new ResourceNotFoundException(CodeConstants.USER, CodeConstants.Email, request.email()));
 
@@ -218,7 +223,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
-    public AuthResponse loginWithOtp(OtpLoginRequest request) {
+    public AuthResponse loginWithOtp(@NonNull OtpLoginRequest request) {
         EmailOtp otp = emailOtpRepository.findActiveByEmailAndCode(request.email(), request.otp())
                 .orElseThrow(() -> new UnauthorizedException("Invalid or expired OTP"));
 
@@ -234,8 +239,30 @@ public class AuthServiceImpl implements AuthService {
         emailOtpRepository.save(otp);
         emailOtpRepository.deleteByUserIdOrExpired(user.getId(), Instant.now());
 
+        recordSignIn(user, AuthProvider.LOCAL);
         log.info("User logged in with OTP: {}", user.getEmail());
         return buildAuthResponse(user);
+    }
+
+    @Override
+    @Transactional
+    public OAuthTokenPair finalizeOAuthLogin(User user, AuthProvider signInVia) {
+        recordSignIn(user, signInVia);
+        String accessToken = tokenProvider.generateAccessToken(user.getId(), user.getEmail(), user.getRole().name());
+        String refreshTokenStr = tokenProvider.generateRefreshToken();
+        RefreshToken refreshToken = RefreshToken.builder()
+                .token(refreshTokenStr)
+                .user(user)
+                .expiresAt(Instant.now().plusMillis(tokenProvider.getRefreshExpirationMs()))
+                .build();
+        refreshTokenRepository.save(refreshToken);
+        return new OAuthTokenPair(accessToken, refreshTokenStr);
+    }
+
+    private void recordSignIn(@NonNull User user, AuthProvider via) {
+        user.setLastSignInAt(Instant.now());
+        user.setLastSignInVia(via);
+        userRepository.save(user);
     }
 
     @Override
@@ -275,7 +302,8 @@ public class AuthServiceImpl implements AuthService {
         log.info("Password reset completed for user: {}", user.getEmail());
     }
 
-    private AuthResponse buildAuthResponse(User user) {
+    @Contract("_ -> new")
+    private @NonNull AuthResponse buildAuthResponse(@NonNull User user) {
         String accessToken = tokenProvider.generateAccessToken(user.getId(), user.getEmail(), user.getRole().name());
         String refreshTokenStr = tokenProvider.generateRefreshToken();
 

@@ -7,13 +7,14 @@ import com.neurelpress.blogs.dto.response.PageResponse;
 import com.neurelpress.blogs.dto.response.UserResponse;
 import com.neurelpress.blogs.exception.ResourceNotFoundException;
 import com.neurelpress.blogs.mapper.UserMapper;
+import com.neurelpress.blogs.repository.ArticleRepository;
 import com.neurelpress.blogs.repository.FollowRepository;
 import com.neurelpress.blogs.repository.UserRepository;
 import com.neurelpress.blogs.service.FollowService;
-import com.neurelpress.blogs.service.UserService;
 import com.neurelpress.blogs.utils.PageResponseSupport;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.NonNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -29,11 +30,11 @@ public class FollowServiceImpl implements FollowService {
     private final FollowRepository followRepository;
     private final UserRepository userRepository;
     private final UserMapper userMapper;
-    private final UserService userService;
+    private final ArticleRepository articleRepository;
 
     @Override
     @Transactional
-    public void toggleFollow(UUID followerId, UUID followingId) {
+    public void toggleFollow(@NonNull UUID followerId, UUID followingId) {
         if (followerId.equals(followingId)) {
             return;
         }
@@ -54,7 +55,7 @@ public class FollowServiceImpl implements FollowService {
 
     @Override
     @Transactional(readOnly = true)
-    public boolean isFollowing(UUID followerId, UUID followingId) {
+    public boolean isFollowing(@NonNull UUID followerId, UUID followingId) {
         if (followerId.equals(followingId)) {
             return false;
         }
@@ -80,7 +81,7 @@ public class FollowServiceImpl implements FollowService {
         Page<com.neurelpress.blogs.dao.Follow> p = followRepository.findByFollowingId(followingId, Pageable.ofSize(size).withPage(page));
         return PageResponseSupport.from(p, f -> {
             var u = f.getFollower();
-            return userMapper.toResponse(u, userService.getPublishedArticleCount(u.getId()));
+            return userMapper.toResponse(u, articleRepository.countPublishedByAuthor(u.getId()));
         });
     }
 
@@ -90,7 +91,7 @@ public class FollowServiceImpl implements FollowService {
         Page<com.neurelpress.blogs.dao.Follow> p = followRepository.findByFollowerId(followerId, Pageable.ofSize(size).withPage(page));
         return PageResponseSupport.from(p, f -> {
             var u = f.getFollowing();
-            return userMapper.toResponse(u, userService.getPublishedArticleCount(u.getId()));
+            return userMapper.toResponse(u, articleRepository.countPublishedByAuthor(u.getId()));
         });
     }
 }

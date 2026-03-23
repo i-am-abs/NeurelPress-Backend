@@ -1,6 +1,7 @@
 package com.neurelpress.blogs.exception;
 
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.NonNull;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -19,31 +20,31 @@ import java.util.Map;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleNotFound(ResourceNotFoundException ex) {
+    public ResponseEntity<ErrorResponse> handleNotFound(@NonNull ResourceNotFoundException ex) {
         log.info("Resource not found: {}", ex.getMessage());
         return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage());
     }
 
     @ExceptionHandler(DuplicateResourceException.class)
-    public ResponseEntity<ErrorResponse> handleDuplicate(DuplicateResourceException ex) {
+    public ResponseEntity<ErrorResponse> handleDuplicate(@NonNull DuplicateResourceException ex) {
         log.info("Duplicate resource: {}", ex.getMessage());
         return buildResponse(HttpStatus.CONFLICT, ex.getMessage());
     }
 
     @ExceptionHandler(UnauthorizedException.class)
-    public ResponseEntity<ErrorResponse> handleUnauthorized(UnauthorizedException ex) {
+    public ResponseEntity<ErrorResponse> handleUnauthorized(@NonNull UnauthorizedException ex) {
         log.info("Unauthorized access: {}", ex.getMessage());
         return buildResponse(HttpStatus.UNAUTHORIZED, ex.getMessage());
     }
 
     @ExceptionHandler(BadCredentialsException.class)
-    public ResponseEntity<ErrorResponse> handleBadCredentials(BadCredentialsException ex) {
+    public ResponseEntity<ErrorResponse> handleBadCredentials(@NonNull BadCredentialsException ex) {
         log.info("Invalid credentials: {}", ex.getMessage());
         return buildResponse(HttpStatus.UNAUTHORIZED, "Invalid email or password");
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ErrorResponse> handleValidation(MethodArgumentNotValidException ex) {
+    public ResponseEntity<ErrorResponse> handleValidation(@NonNull MethodArgumentNotValidException ex) {
         Map<String, String> errors = new HashMap<>();
         ex.getBindingResult().getAllErrors().forEach(error -> {
             String field = ((FieldError) error).getField();
@@ -56,7 +57,7 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
-    public ResponseEntity<ErrorResponse> handleMethodNotSupported(HttpRequestMethodNotSupportedException ex) {
+    public ResponseEntity<ErrorResponse> handleMethodNotSupported(@NonNull HttpRequestMethodNotSupportedException ex) {
         log.info("Method not allowed: {}", ex.getMessage());
         return buildResponse(HttpStatus.METHOD_NOT_ALLOWED, ex.getMessage());
     }
@@ -67,7 +68,7 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred");
     }
 
-    private ResponseEntity<ErrorResponse> buildResponse(HttpStatus status, String message) {
+    private @NonNull ResponseEntity<ErrorResponse> buildResponse(@NonNull HttpStatus status, String message) {
         ErrorResponse response = new ErrorResponse(status.value(), message, Instant.now(), null);
         log.info("Error in building response: {}", response);
         return ResponseEntity.status(status).body(response);
