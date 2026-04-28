@@ -2,11 +2,7 @@ package com.neurelpress.blogs.service.impl;
 
 import com.neurelpress.blogs.constants.CodeConstants;
 import com.neurelpress.blogs.constants.enums.ArticleStatus;
-import com.neurelpress.blogs.dao.User;
-import com.neurelpress.blogs.dao.Tag;
-import com.neurelpress.blogs.dao.Book;
-import com.neurelpress.blogs.dao.Article;
-import com.neurelpress.blogs.dao.ArticleClap;
+import com.neurelpress.blogs.dao.*;
 import com.neurelpress.blogs.dto.request.ArticleRequest;
 import com.neurelpress.blogs.dto.response.ArticleResponse;
 import com.neurelpress.blogs.dto.response.ArticleSummaryResponse;
@@ -65,30 +61,9 @@ public class ArticleServiceImpl implements ArticleService {
     @Override
     @Transactional
     public ArticleResponse createArticle(UUID authorId, @NonNull ArticleRequest request) {
-        User author = userRepository.findById(authorId)
-                .orElseThrow(() -> new ResourceNotFoundException(CodeConstants.USER, CodeConstants.ID, authorId));
-
+        User author = findUserById(authorId);
         String slug = uniqueSlug(SlugUtils.toSlug(request.title()));
-        Set<Tag> tags = resolveTags(request.tagSlugs());
-        Set<Book> books = resolveBooks(request.bookIds());
-
-        int readTime = computeReadTime(request.content());
-
-        Article article = Article.builder()
-                .author(author)
-                .title(request.title())
-                .slug(slug)
-                .summary(request.summary())
-                .content(request.content())
-                .coverImage(request.coverImage())
-                .status(ArticleStatus.DRAFT)
-                .readTime(readTime)
-                .seoTitle(request.seoTitle())
-                .seoDescription(request.seoDescription())
-                .canonicalUrl(request.canonicalUrl())
-                .tags(tags)
-                .books(books)
-                .build();
+        Article article = buildDraftArticle(author, slug, request);
 
         article = articleRepository.save(article);
         log.info("Created new article: {}", article.getSlug());
@@ -98,11 +73,8 @@ public class ArticleServiceImpl implements ArticleService {
     @Override
     @Transactional
     public ArticleResponse updateArticle(UUID authorId, String slug, ArticleRequest request) {
-        Article article = articleRepository.findBySlug(slug)
-                .orElseThrow(() -> new ResourceNotFoundException(CodeConstants.Article, CodeConstants.SLUG, slug));
-        if (!article.getAuthor().getId().equals(authorId)) {
-            throw new UnauthorizedException("Not authorized to update this article");
-        }
+        Article article = findArticleBySlug(slug);
+        ensureAuthorOwnership(authorId, article, "update");
 
         article.setTitle(request.title());
         article.setSummary(request.summary());
@@ -123,11 +95,8 @@ public class ArticleServiceImpl implements ArticleService {
     @Override
     @Transactional
     public ArticleResponse publishArticle(UUID authorId, String slug) {
-        Article article = articleRepository.findBySlug(slug)
-                .orElseThrow(() -> new ResourceNotFoundException(CodeConstants.Article, CodeConstants.SLUG, slug));
-        if (!article.getAuthor().getId().equals(authorId)) {
-            throw new UnauthorizedException("Not authorized to publish this article");
-        }
+        Article article = findArticleBySlug(slug);
+        ensureAuthorOwnership(authorId, article, "publish");
 
         if (article.getTags().isEmpty() && article.getContent() != null && !article.getContent().isBlank()) {
             try {
@@ -229,11 +198,8 @@ public class ArticleServiceImpl implements ArticleService {
     @Override
     @Transactional
     public void deleteArticle(UUID authorId, String slug) {
-        Article article = articleRepository.findBySlug(slug)
-                .orElseThrow(() -> new ResourceNotFoundException(CodeConstants.Article, CodeConstants.SLUG, slug));
-        if (!article.getAuthor().getId().equals(authorId)) {
-            throw new UnauthorizedException("Not authorized to delete this article");
-        }
+        Article article = findArticleBySlug(slug);
+        ensureAuthorOwnership(authorId, article, "delete");
         articleRepository.delete(article);
     }
 
@@ -246,11 +212,44 @@ public class ArticleServiceImpl implements ArticleService {
             log.debug("User {} already clapped article {}", userId, slug);
             return;
         }
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException(CodeConstants.USER, CodeConstants.ID, userId));
+        User user = findUserById(userId);
         articleClapRepository.save(ArticleClap.builder().user(user).article(article).build());
         articleRepository.incrementClaps(article.getId());
         log.info("Article clapped: {} by user {}", slug, userId);
+    }
+
+    private User findUserById(UUID userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException(CodeConstants.USER, CodeConstants.ID, userId));
+    }
+
+    private Article findArticleBySlug(String slug) {
+        return articleRepository.findBySlug(slug)
+                .orElseThrow(() -> new ResourceNotFoundException(CodeConstants.Article, CodeConstants.SLUG, slug));
+    }
+
+    private void ensureAuthorOwnership(UUID authorId, Article article, String operation) {
+        if (!article.getAuthor().getId().equals(authorId)) {
+            throw new UnauthorizedException("Not authorized to " + operation + " this article");
+        }
+    }
+
+    private @NonNull Article buildDraftArticle(User author, String slug, @NonNull ArticleRequest request) {
+        return Article.builder()
+                .author(author)
+                .title(request.title())
+                .slug(slug)
+                .summary(request.summary())
+                .content(request.content())
+                .coverImage(request.coverImage())
+                .status(ArticleStatus.DRAFT)
+                .readTime(computeReadTime(request.content()))
+                .seoTitle(request.seoTitle())
+                .seoDescription(request.seoDescription())
+                .canonicalUrl(request.canonicalUrl())
+                .tags(resolveTags(request.tagSlugs()))
+                .books(resolveBooks(request.bookIds()))
+                .build();
     }
 
     private String uniqueSlug(String base) {
@@ -278,7 +277,11 @@ public class ArticleServiceImpl implements ArticleService {
         if (bookIds == null || bookIds.isEmpty()) {
             return new HashSet<>();
         }
-        log.info("Resolved {} books: {}", bookIds.size(), String.join(", ", bookIds.toString()));
-        return new HashSet<>(bookRepository.findAllById(bookIds));
+        List<Book> found = bookRepository.findAllById(bookIds);
+        if (found.size() != bookIds.size()) {
+            throw new ResourceNotFoundException(CodeConstants.BOOK, CodeConstants.ID, bookIds.toString());
+        }
+        log.info("Resolved {} books", found.size());
+        return new HashSet<>(found);
     }
 }

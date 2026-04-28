@@ -4,15 +4,10 @@ public final class CodeConstants {
     public static final String BEARER = "Bearer";
 
     public static final String GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta";
-    public static final String MISTRAL_BASE_URL = "https://api.mistral.ai/v1";
-
-    public static final String TRENDING = "trending";
-    public static final String QUOTE_OF_THE_DAY = "quoteOfTheDay";
-    public static final String ARTICLE_VIEWS = "articleViews";
 
     public static final String TITLE = "title";
     public static final String CONTENT = "content";
-    public static final String SUMMARY = "Summary";
+    public static final String SUMMARY = "summary";
     public static final String FOLLOWING = "following";
     public static final String TOKEN = "token";
     public static final String REFRESH_TOKEN = "refreshToken";
@@ -24,8 +19,6 @@ public final class CodeConstants {
     public static final String Article = "Article";
     public static final String SLUG = "slug";
     public static final String TAGS = "Tags";
-    public static final String Quote = "Quote";
-    public static final String Active = "Active";
     public static final String Email = "Email";
 
     public static final String EMAIL_VERIFICATION_SUCCESSFUL = "Email verified successfully";
@@ -55,11 +48,6 @@ public final class CodeConstants {
             Return ONLY the summary.
             Content: %s
             """;
-
-    public static final Integer TIME_STAMP_HOUR = 24;
-    public static final Integer TIME_STAMP_MINUTE = 60;
-    public static final Integer TIME_STAMP_SECOND = 60;
-    public static final Integer REDIS_CACHE_TTL = 30;
     public static final Integer WORDS_PER_MINUTE = 200;
     public static final Integer EMAIL_VERIFICATION_EXPIRE_HOURS = 24;
     public static final int PASSWORD_RESET_EXPIRE_HOURS = 1;

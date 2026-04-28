@@ -28,7 +28,7 @@ public class ArticleController {
 
     private final ArticleService articleService;
 
-    @GetMapping(value = {ApiConstants.Latest})
+    @GetMapping(value = {"", ApiConstants.Latest})
     @Operation(summary = "Get published articles (paginated)")
     public ResponseEntity<PageResponse<ArticleSummaryResponse>> getArticles(@RequestParam(defaultValue = "0") int page,
                                                                             @RequestParam(defaultValue = "12") int size) {
