@@ -1,6 +1,6 @@
 package com.neurelpress.blogs.dao;
 
-import com.neurelpress.blogs.constants.enums.ArticleStatus;
+import com.neurelpress.blogs.constants.ArticleStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;

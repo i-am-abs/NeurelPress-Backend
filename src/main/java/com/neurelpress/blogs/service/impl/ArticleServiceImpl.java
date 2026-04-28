@@ -1,7 +1,7 @@
 package com.neurelpress.blogs.service.impl;
 
 import com.neurelpress.blogs.constants.CodeConstants;
-import com.neurelpress.blogs.constants.enums.ArticleStatus;
+import com.neurelpress.blogs.constants.ArticleStatus;
 import com.neurelpress.blogs.dao.*;
 import com.neurelpress.blogs.dto.request.ArticleRequest;
 import com.neurelpress.blogs.dto.response.ArticleResponse;
@@ -72,7 +72,7 @@ public class ArticleServiceImpl implements ArticleService {
 
     @Override
     @Transactional
-    public ArticleResponse updateArticle(UUID authorId, String slug, ArticleRequest request) {
+    public ArticleResponse updateArticle(UUID authorId, String slug, @NonNull ArticleRequest request) {
         Article article = findArticleBySlug(slug);
         ensureAuthorOwnership(authorId, article, "update");
 
@@ -228,7 +228,7 @@ public class ArticleServiceImpl implements ArticleService {
                 .orElseThrow(() -> new ResourceNotFoundException(CodeConstants.Article, CodeConstants.SLUG, slug));
     }
 
-    private void ensureAuthorOwnership(UUID authorId, Article article, String operation) {
+    private void ensureAuthorOwnership(UUID authorId, @NonNull Article article, String operation) {
         if (!article.getAuthor().getId().equals(authorId)) {
             throw new UnauthorizedException("Not authorized to " + operation + " this article");
         }

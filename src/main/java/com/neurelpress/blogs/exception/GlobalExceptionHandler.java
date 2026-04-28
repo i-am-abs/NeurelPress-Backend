@@ -1,5 +1,8 @@
 package com.neurelpress.blogs.exception;
 
+import com.neurelpress.blogs.service.AnalyticsService;
+import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
 import org.springframework.http.HttpStatus;
@@ -17,7 +20,10 @@ import java.util.Map;
 
 @Slf4j
 @RestControllerAdvice
+@RequiredArgsConstructor
 public class GlobalExceptionHandler {
+
+    private final AnalyticsService analyticsService;
 
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleNotFound(@NonNull ResourceNotFoundException ex) {
@@ -50,9 +56,9 @@ public class GlobalExceptionHandler {
             String field = ((FieldError) error).getField();
             errors.put(field, error.getDefaultMessage());
         });
+        log.info("Validation error: {}", errors);
         ErrorResponse response = new ErrorResponse(
                 HttpStatus.BAD_REQUEST.value(), "Validation failed", Instant.now(), errors);
-        log.info("Validation error: {}", response.errors());
         return ResponseEntity.badRequest().body(response);
     }
 
@@ -63,15 +69,17 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponse> handleGeneral(Exception ex) {
+    public ResponseEntity<ErrorResponse> handleGeneral(Exception ex, HttpServletRequest request) {
         log.error("Unhandled exception", ex);
+        try {
+            analyticsService.reportServerCrash(ex, request, HttpStatus.INTERNAL_SERVER_ERROR.value());
+        } catch (Exception ignored) {
+        }
         return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred");
     }
 
     private @NonNull ResponseEntity<ErrorResponse> buildResponse(@NonNull HttpStatus status, String message) {
-        ErrorResponse response = new ErrorResponse(status.value(), message, Instant.now(), null);
-        log.info("Error in building response: {}", response);
-        return ResponseEntity.status(status).body(response);
+        return ResponseEntity.status(status).body(new ErrorResponse(status.value(), message, Instant.now(), null));
     }
 
     public record ErrorResponse(int status, String message, Instant timestamp, Map<String, String> errors) {

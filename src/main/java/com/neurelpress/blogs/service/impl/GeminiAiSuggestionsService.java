@@ -2,12 +2,12 @@ package com.neurelpress.blogs.service.impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.neurelpress.blogs.dto.properties.NeuralPressAiProperties;
 import com.neurelpress.blogs.constants.CodeConstants;
 import com.neurelpress.blogs.service.AiSuggestionsService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -21,17 +21,12 @@ import java.util.stream.StreamSupport;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@ConditionalOnProperty(name = "neuralpress.ai.provider", havingValue = "gemini", matchIfMissing = true)
+@ConditionalOnProperty(name = "neuralpress.ai-provider", havingValue = "gemini", matchIfMissing = true)
 public class GeminiAiSuggestionsService implements AiSuggestionsService {
 
     private final RestClient geminiRestClient;
     private final ObjectMapper objectMapper;
-
-    @Value("${neuralpress.gemini.api-key:}")
-    private String apiKey;
-
-    @Value("${neuralpress.gemini.model:gemini-1.5-flash}")
-    private String model;
+    private final NeuralPressAiProperties aiProperties;
 
     private static @NonNull String truncate(String s, int max) {
 
@@ -91,7 +86,7 @@ public class GeminiAiSuggestionsService implements AiSuggestionsService {
     }
 
     private boolean isConfigured() {
-        return apiKey == null || apiKey.isBlank();
+        return aiProperties.gemini().isConfigured();
     }
 
     private @NonNull String generateContent(String prompt) {
@@ -114,8 +109,8 @@ public class GeminiAiSuggestionsService implements AiSuggestionsService {
             String response = geminiRestClient.post()
                     .uri(uriBuilder -> uriBuilder
                             .path("/models/{model}:generateContent")
-                            .queryParam("key", apiKey)
-                            .build(model))
+                            .queryParam("key", aiProperties.gemini().apiKey())
+                            .build(aiProperties.gemini().model()))
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(body)
                     .retrieve()

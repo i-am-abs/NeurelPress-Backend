@@ -1,6 +1,6 @@
 package com.neurelpress.blogs.service.impl;
 
-import com.neurelpress.blogs.config.properties.NeuralPressS3Properties;
+import com.neurelpress.blogs.dto.properties.NeuralPressS3Properties;
 import com.neurelpress.blogs.service.StorageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,7 +27,7 @@ public class S3StorageServiceImpl implements StorageService {
         S3Client s3Client = s3ClientProvider.getIfAvailable();
         if (!properties.isConfigured() || s3Client == null) {
             log.warn("S3 is not configured. Returning local placeholder URL.");
-            return "https://assets.neuralpress.dev/placeholder.jpg"; // Placeholder if not configured
+            return "https://assets.neuralpress.dev/placeholder.jpg";
         }
 
         if (file == null || file.isEmpty()) {
@@ -52,7 +52,6 @@ public class S3StorageServiceImpl implements StorageService {
 
             s3Client.putObject(putObjectRequest, RequestBody.fromInputStream(file.getInputStream(), file.getSize()));
 
-            // Strip trailing slash from publicUrl if present, then append filename
             String publicUrl = properties.publicUrl();
             if (publicUrl.endsWith("/")) {
                 publicUrl = publicUrl.substring(0, publicUrl.length() - 1);

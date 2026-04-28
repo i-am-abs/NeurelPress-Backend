@@ -1,4 +1,4 @@
-package com.neurelpress.blogs.config.properties;
+package com.neurelpress.blogs.dto.properties;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;

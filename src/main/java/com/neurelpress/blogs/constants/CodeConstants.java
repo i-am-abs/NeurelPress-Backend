@@ -1,6 +1,11 @@
 package com.neurelpress.blogs.constants;
 
-public final class CodeConstants {
+/**
+ * Shared string/numeric constants as an enum type (no instances) to align
+ * with enum-only constants convention while preserving compile-time literals.
+ */
+public enum CodeConstants {
+    ;
     public static final String BEARER = "Bearer";
 
     public static final String GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta";
@@ -52,7 +57,4 @@ public final class CodeConstants {
     public static final Integer EMAIL_VERIFICATION_EXPIRE_HOURS = 24;
     public static final int PASSWORD_RESET_EXPIRE_HOURS = 1;
 
-    private CodeConstants() {
-        throw new UnsupportedOperationException("Constant class cannot be instantiated");
-    }
 }

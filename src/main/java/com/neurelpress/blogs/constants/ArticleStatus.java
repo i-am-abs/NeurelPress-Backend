@@ -1,4 +1,4 @@
-package com.neurelpress.blogs.constants.enums;
+package com.neurelpress.blogs.constants;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

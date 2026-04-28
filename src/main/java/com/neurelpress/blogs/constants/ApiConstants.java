@@ -1,6 +1,11 @@
 package com.neurelpress.blogs.constants;
 
-public final class ApiConstants {
+/**
+ * API route constants kept as compile-time literals for Spring annotations.
+ * Declared in an enum type (no instances) per project convention.
+ */
+public enum ApiConstants {
+    ;
     public static final String Api_Ai = "/api/ai";
     public static final String Api_Articles = "/api/articles";
     public static final String Api_Auth = "/api/auth";
@@ -34,12 +39,17 @@ public final class ApiConstants {
 
     public static final String Request_Otp = "/request-otp";
     public static final String Login_Otp = "/login-otp";
+    public static final String Google_Sign_In = "/google";
+
+    public static final String Forgot_Password = "/forgot-password";
+    public static final String Reset_Password = "/reset-password";
+
+    public static final String Api_Analytics = "/api/analytics";
+    public static final String Track = "/track";
+    public static final String Crash = "/crash";
 
     public static final String Search = "/search";
     public static final String Really_Simple_Syndication = "/rss";
     public static final String Today = "/today";
 
-    private ApiConstants() {
-        throw new UnsupportedOperationException("Api Constant class cannot be instantiated");
-    }
 }

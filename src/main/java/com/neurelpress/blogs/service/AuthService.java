@@ -1,10 +1,7 @@
 package com.neurelpress.blogs.service;
 
 import com.neurelpress.blogs.dto.request.*;
-import com.neurelpress.blogs.constants.enums.AuthProvider;
-import com.neurelpress.blogs.dao.User;
 import com.neurelpress.blogs.dto.response.AuthResponse;
-import com.neurelpress.blogs.dto.response.OAuthTokenPair;
 import com.neurelpress.blogs.dto.response.UserResponse;
 
 import java.util.UUID;
@@ -33,5 +30,5 @@ public interface AuthService {
 
     void resetPassword(String token, String newPassword);
 
-    OAuthTokenPair finalizeOAuthLogin(User user, AuthProvider signInVia);
+    AuthResponse signInWithGoogle(GoogleSignInRequest request);
 }

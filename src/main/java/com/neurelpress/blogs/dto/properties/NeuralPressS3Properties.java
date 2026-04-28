@@ -1,4 +1,4 @@
-package com.neurelpress.blogs.config.properties;
+package com.neurelpress.blogs.dto.properties;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
@@ -21,7 +21,6 @@ public record NeuralPressS3Properties(
         if (value == null || value.isBlank()) {
             return false;
         }
-        // Treat unresolved placeholders like ${VAR_NAME} as not configured.
         return !(value.startsWith("${") && value.endsWith("}"));
     }
 }

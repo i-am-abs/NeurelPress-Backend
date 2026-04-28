@@ -1,11 +1,12 @@
 package com.neurelpress.blogs.service.impl;
 
-import com.neurelpress.blogs.constants.enums.ArticleStatus;
+import com.neurelpress.blogs.dto.properties.NeuralPressCorsProperties;
+import com.neurelpress.blogs.constants.ArticleStatus;
 import com.neurelpress.blogs.dao.Article;
 import com.neurelpress.blogs.repository.ArticleRepository;
 import com.neurelpress.blogs.service.FeedService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
+import org.jspecify.annotations.NonNull;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
@@ -21,12 +22,11 @@ public class FeedServiceImpl implements FeedService {
     private static final DateTimeFormatter RFC_822_FORMATTER = DateTimeFormatter.ofPattern("EEE, dd MMM yyyy HH:mm:ss Z");
 
     private final ArticleRepository articleRepository;
-
-    @Value("${neuralpress.app.frontend-url}")
-    private String frontendUrl;
+    private final NeuralPressCorsProperties corsProperties;
 
     @Override
     public String generateRssFeed() {
+        String frontendUrl = corsProperties.app().primaryFrontendUrl();
         List<Article> articles = articleRepository.findByStatusOrderByPublishedAtDesc(
                 ArticleStatus.PUBLISHED, PageRequest.of(0, RSS_LIMIT)).getContent();
 
@@ -41,7 +41,7 @@ public class FeedServiceImpl implements FeedService {
         xml.append("  <atom:link href=\"").append(frontendUrl).append("/api/feed/rss\" rel=\"self\" type=\"application/rss+xml\"/>\n");
 
         for (Article article : articles) {
-            appendItem(xml, article);
+            appendItem(xml, article, frontendUrl);
         }
 
         xml.append("</channel>\n");
@@ -49,7 +49,7 @@ public class FeedServiceImpl implements FeedService {
         return xml.toString();
     }
 
-    private void appendItem(StringBuilder xml, Article article) {
+    private void appendItem(@NonNull StringBuilder xml, @NonNull Article article, @NonNull String frontendUrl) {
         String articleUrl = frontendUrl + "/u/" + article.getAuthor().getUsername() + "/" + article.getSlug();
         xml.append("  <item>\n");
         xml.append("    <title><![CDATA[").append(article.getTitle()).append("]]></title>\n");

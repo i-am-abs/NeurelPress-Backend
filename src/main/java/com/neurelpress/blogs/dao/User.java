@@ -1,7 +1,7 @@
 package com.neurelpress.blogs.dao;
 
-import com.neurelpress.blogs.constants.enums.AuthProvider;
-import com.neurelpress.blogs.constants.enums.UserRole;
+import com.neurelpress.blogs.constants.AuthProvider;
+import com.neurelpress.blogs.constants.UserRole;
 import jakarta.persistence.Column;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.CascadeType;

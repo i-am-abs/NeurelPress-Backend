@@ -1,6 +1,6 @@
 package com.neurelpress.blogs.config;
 
-import com.neurelpress.blogs.config.properties.NeuralPressGoogleProperties;
+import com.neurelpress.blogs.dto.properties.NeuralPressGoogleProperties;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.jwk.source.JWKSourceBuilder;
 import com.nimbusds.jose.proc.JWSVerificationKeySelector;
@@ -10,6 +10,7 @@ import com.nimbusds.jwt.proc.ConfigurableJWTProcessor;
 import com.nimbusds.jwt.proc.DefaultJWTProcessor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.NonNull;
 import org.springframework.stereotype.Component;
 
 import java.net.URI;
@@ -55,7 +56,7 @@ public class GoogleIdTokenVerifier {
         }
     }
 
-    private ConfigurableJWTProcessor<SecurityContext> buildProcessor() throws Exception {
+    private @NonNull ConfigurableJWTProcessor<SecurityContext> buildProcessor() throws Exception {
         ConfigurableJWTProcessor<SecurityContext> processor = new DefaultJWTProcessor<>();
         var jwkSource = JWKSourceBuilder
                 .create(URI.create(GOOGLE_JWKS_URL).toURL())

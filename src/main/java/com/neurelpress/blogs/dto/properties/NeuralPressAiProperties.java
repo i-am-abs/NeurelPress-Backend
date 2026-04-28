@@ -1,5 +1,6 @@
-package com.neurelpress.blogs.config.properties;
+package com.neurelpress.blogs.dto.properties;
 
+import org.jspecify.annotations.NonNull;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties(prefix = "neuralpress")
@@ -8,7 +9,7 @@ public record NeuralPressAiProperties(
         Gemini gemini) {
     public record Gemini(String apiKey, String model) {
         public boolean isConfigured() {
-            return apiKey != null && !apiKey.isBlank();
+            return apiKey == null || apiKey.isBlank();
         }
     }
 
@@ -16,7 +17,7 @@ public record NeuralPressAiProperties(
         return "gemini".equalsIgnoreCase(effectiveProvider());
     }
 
-    private String effectiveProvider() {
+    private @NonNull String effectiveProvider() {
         if (aiProvider == null) {
             return "gemini";
         }

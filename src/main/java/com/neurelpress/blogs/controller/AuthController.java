@@ -31,21 +31,21 @@ public class AuthController {
     @PostMapping(ApiConstants.Register)
     @Operation(summary = "Register a new user")
     public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
-        log.info("Registering user: {}", request);
+        log.info("Registering user: {}", request.email());
         return ResponseEntity.status(HttpStatus.CREATED).body(authService.register(request));
     }
 
     @PostMapping(ApiConstants.Login)
     @Operation(summary = "Login with email and password")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
-        log.info("Logging in user: {}", request);
+        log.info("Logging in user: {}", request.email());
         return ResponseEntity.ok(authService.login(request));
     }
 
     @PostMapping(ApiConstants.Refresh)
     @Operation(summary = "Refresh access token")
     public ResponseEntity<AuthResponse> refreshToken(@Valid @RequestBody RefreshTokenRequest request) {
-        log.info("Refreshing token: {}", request);
+        log.debug("Refreshing token");
         return ResponseEntity.ok(authService.refreshToken(request));
     }
 
@@ -99,18 +99,24 @@ public class AuthController {
     @PostMapping(ApiConstants.Login_Otp)
     @Operation(summary = "Login with email and OTP")
     public ResponseEntity<AuthResponse> loginWithOtp(@Valid @RequestBody OtpLoginRequest request) {
-        log.info("Logged with OTP: {}", request);
+        log.info("Logged with OTP: {}", request.email());
         return ResponseEntity.ok(authService.loginWithOtp(request));
     }
 
-    @PostMapping("/forgot-password")
+    @PostMapping(ApiConstants.Google_Sign_In)
+    @Operation(summary = "Login with a Google ID token (Google Identity Services)")
+    public ResponseEntity<AuthResponse> googleSignIn(@Valid @RequestBody GoogleSignInRequest request) {
+        return ResponseEntity.ok(authService.signInWithGoogle(request));
+    }
+
+    @PostMapping(ApiConstants.Forgot_Password)
     @Operation(summary = "Request password reset email")
     public ResponseEntity<Map<String, String>> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
         authService.requestPasswordReset(request.email());
         return ResponseEntity.ok(Map.of(CodeConstants.MESSAGE, CodeConstants.PASSWORD_RESET_EMAIL_SENT));
     }
 
-    @PostMapping("/reset-password")
+    @PostMapping(ApiConstants.Reset_Password)
     @Operation(summary = "Reset password with token from email")
     public ResponseEntity<Map<String, String>> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
         authService.resetPassword(request.token(), request.newPassword());

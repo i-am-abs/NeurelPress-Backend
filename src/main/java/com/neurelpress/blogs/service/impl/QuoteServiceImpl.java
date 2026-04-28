@@ -2,13 +2,15 @@ package com.neurelpress.blogs.service.impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.neurelpress.blogs.dto.properties.NeuralPressAiProperties;
 import com.neurelpress.blogs.dao.Quote;
 import com.neurelpress.blogs.dto.response.QuoteResponse;
 import com.neurelpress.blogs.repository.QuoteRepository;
 import com.neurelpress.blogs.service.QuoteService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -27,12 +29,7 @@ public class QuoteServiceImpl implements QuoteService {
     private final QuoteRepository quoteRepository;
     private final RestClient geminiRestClient;
     private final ObjectMapper objectMapper;
-
-    @Value("${neuralpress.gemini.api-key:}")
-    private String geminiApiKey;
-
-    @Value("${neuralpress.gemini.model:gemini-1.5-flash}")
-    private String geminiModel;
+    private final NeuralPressAiProperties aiProperties;
 
     @Override
     @Transactional(readOnly = true)
@@ -55,8 +52,8 @@ public class QuoteServiceImpl implements QuoteService {
         return new QuoteResponse(quote.getId(), quote.getText(), quote.getAuthor(), quote.getSource());
     }
 
-    private QuoteResponse generateAiQuoteOfTheDay() {
-        if (geminiApiKey == null || geminiApiKey.isBlank()) {
+    private @Nullable QuoteResponse generateAiQuoteOfTheDay() {
+        if (aiProperties.gemini().isConfigured()) {
             log.info("Gemini API key missing; skipping AI quote generation.");
             return null;
         }
@@ -82,8 +79,8 @@ public class QuoteServiceImpl implements QuoteService {
             String response = geminiRestClient.post()
                     .uri(uriBuilder -> uriBuilder
                             .path("/models/{model}:generateContent")
-                            .queryParam("key", geminiApiKey)
-                            .build(geminiModel))
+                            .queryParam("key", aiProperties.gemini().apiKey())
+                            .build(aiProperties.gemini().model()))
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(body)
                     .retrieve()
@@ -107,7 +104,7 @@ public class QuoteServiceImpl implements QuoteService {
         }
     }
 
-    private String extractTextFromGemini(String response) {
+    private @NonNull String extractTextFromGemini(String response) {
         try {
             JsonNode root = objectMapper.readTree(response);
             JsonNode text = root.path("candidates").path(0).path("content").path("parts").path(0).path("text");

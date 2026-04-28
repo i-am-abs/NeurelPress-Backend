@@ -1,25 +1,27 @@
 package com.neurelpress.blogs.service.impl;
 
 import com.neurelpress.blogs.constants.CodeConstants;
-import com.neurelpress.blogs.constants.enums.AuthProvider;
-import com.neurelpress.blogs.dao.*;
+import com.neurelpress.blogs.constants.AuthProvider;
+import com.neurelpress.blogs.dao.EmailOtp;
+import com.neurelpress.blogs.dao.EmailVerificationToken;
+import com.neurelpress.blogs.dao.PasswordResetToken;
+import com.neurelpress.blogs.dao.RefreshToken;
+import com.neurelpress.blogs.dao.User;
 import com.neurelpress.blogs.dto.request.*;
 import com.neurelpress.blogs.dto.response.AuthResponse;
-import com.neurelpress.blogs.dto.response.OAuthTokenPair;
 import com.neurelpress.blogs.dto.response.UserResponse;
 import com.neurelpress.blogs.exception.DuplicateResourceException;
 import com.neurelpress.blogs.exception.ResourceNotFoundException;
 import com.neurelpress.blogs.exception.UnauthorizedException;
 import com.neurelpress.blogs.mapper.UserMapper;
 import com.neurelpress.blogs.repository.*;
-import com.neurelpress.blogs.security.jwt.JwtTokenProvider;
 import com.neurelpress.blogs.service.AuthService;
 import com.neurelpress.blogs.service.EmailService;
+import com.neurelpress.blogs.service.OAuthAuthService;
 import com.neurelpress.blogs.service.UserService;
 import com.neurelpress.blogs.utils.SecureTokenGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.Contract;
 import org.jspecify.annotations.NonNull;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -36,14 +38,15 @@ import java.util.concurrent.ThreadLocalRandom;
 public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
-    private final UserService userService;
     private final RefreshTokenRepository refreshTokenRepository;
     private final EmailVerificationTokenRepository emailVerificationTokenRepository;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final EmailOtpRepository emailOtpRepository;
     private final EmailService emailService;
     private final PasswordEncoder passwordEncoder;
-    private final JwtTokenProvider tokenProvider;
+    private final OAuthAuthService oAuthAuthService;
+    private final AuthTokenService authTokenService;
+    private final UserService userService;
     private final UserMapper userMapper;
 
     @Override
@@ -66,7 +69,7 @@ public class AuthServiceImpl implements AuthService {
                 .build();
 
         user = userRepository.save(user);
-        recordSignIn(user, AuthProvider.LOCAL);
+        authTokenService.recordSignIn(user, AuthProvider.LOCAL);
 
         String token = SecureTokenGenerator.generateHexToken();
         EmailVerificationToken evToken = EmailVerificationToken.builder()
@@ -79,7 +82,7 @@ public class AuthServiceImpl implements AuthService {
         emailService.sendVerificationEmail(user.getEmail(), user.getDisplayName(), token);
 
         log.info("User registered: {}", user.getEmail());
-        return buildAuthResponse(user);
+        return authTokenService.issueAuthResponse(user);
     }
 
     @Override
@@ -100,9 +103,9 @@ public class AuthServiceImpl implements AuthService {
             throw new UnauthorizedException("Invalid email or password");
         }
 
-        recordSignIn(user, AuthProvider.LOCAL);
+        authTokenService.recordSignIn(user, AuthProvider.LOCAL);
         log.info("User logged in: {}", user.getEmail());
-        return buildAuthResponse(user);
+        return authTokenService.issueAuthResponse(user);
     }
 
     @Override
@@ -123,7 +126,7 @@ public class AuthServiceImpl implements AuthService {
         User user = storedToken.getUser();
 
         log.info("User logged & refreshed Token with: {}", user.getEmail());
-        return buildAuthResponse(user);
+        return authTokenService.issueAuthResponse(user);
     }
 
     @Override
@@ -227,30 +230,17 @@ public class AuthServiceImpl implements AuthService {
         emailOtpRepository.save(otp);
         emailOtpRepository.deleteByUserIdOrExpired(user.getId(), Instant.now());
 
-        recordSignIn(user, AuthProvider.LOCAL);
+        authTokenService.recordSignIn(user, AuthProvider.LOCAL);
         log.info("User logged in with OTP: {}", user.getEmail());
-        return buildAuthResponse(user);
+        return authTokenService.issueAuthResponse(user);
     }
 
     @Override
     @Transactional
-    public OAuthTokenPair finalizeOAuthLogin(User user, AuthProvider signInVia) {
-        recordSignIn(user, signInVia);
-        String accessToken = tokenProvider.generateAccessToken(user.getId(), user.getEmail(), user.getRole().name());
-        String refreshTokenStr = tokenProvider.generateRefreshToken();
-        RefreshToken refreshToken = RefreshToken.builder()
-                .token(refreshTokenStr)
-                .user(user)
-                .expiresAt(Instant.now().plusMillis(tokenProvider.getRefreshExpirationMs()))
-                .build();
-        refreshTokenRepository.save(refreshToken);
-        return new OAuthTokenPair(accessToken, refreshTokenStr);
-    }
-
-    private void recordSignIn(@NonNull User user, AuthProvider via) {
-        user.setLastSignInAt(Instant.now());
-        user.setLastSignInVia(via);
-        userRepository.save(user);
+    public AuthResponse signInWithGoogle(@NonNull GoogleSignInRequest request) {
+        AuthResponse response = oAuthAuthService.signInWithGoogleIdToken(request.idToken());
+        log.info("Google sign-in success: {}", response.user().email());
+        return response;
     }
 
     @Override
@@ -290,20 +280,4 @@ public class AuthServiceImpl implements AuthService {
         log.info("Password reset completed for user: {}", user.getEmail());
     }
 
-    @Contract("_ -> new")
-    private @NonNull AuthResponse buildAuthResponse(@NonNull User user) {
-        String accessToken = tokenProvider.generateAccessToken(user.getId(), user.getEmail(), user.getRole().name());
-        String refreshTokenStr = tokenProvider.generateRefreshToken();
-
-        RefreshToken refreshToken = RefreshToken.builder()
-                .token(refreshTokenStr)
-                .user(user)
-                .expiresAt(Instant.now().plusMillis(tokenProvider.getRefreshExpirationMs()))
-                .build();
-        refreshTokenRepository.save(refreshToken);
-        log.info("New refresh token created: {}", refreshTokenStr);
-        long publishedCount = userService.getPublishedArticleCount(user.getId());
-        return new AuthResponse(accessToken, refreshTokenStr, CodeConstants.BEARER,
-                tokenProvider.getAccessExpirationMs() / 1000, userMapper.toResponse(user, publishedCount));
-    }
 }

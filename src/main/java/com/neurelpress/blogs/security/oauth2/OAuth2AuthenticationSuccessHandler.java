@@ -1,18 +1,18 @@
 package com.neurelpress.blogs.security.oauth2;
 
+import com.neurelpress.blogs.dto.properties.NeuralPressCorsProperties;
 import com.neurelpress.blogs.constants.ApiConstants;
 import com.neurelpress.blogs.constants.CodeConstants;
-import com.neurelpress.blogs.constants.enums.AuthProvider;
+import com.neurelpress.blogs.constants.AuthProvider;
 import com.neurelpress.blogs.dao.User;
 import com.neurelpress.blogs.dto.response.OAuthTokenPair;
 import com.neurelpress.blogs.repository.UserRepository;
-import com.neurelpress.blogs.service.AuthService;
+import com.neurelpress.blogs.service.OAuthAuthService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.user.OAuth2User;
@@ -30,11 +30,9 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
-    private final AuthService authService;
+    private final OAuthAuthService oAuthAuthService;
     private final UserRepository userRepository;
-
-    @Value("${neuralpress.app.frontend-url}")
-    private String frontendUrl;
+    private final NeuralPressCorsProperties corsProperties;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request,
@@ -65,7 +63,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         User user = resolved.get();
 
         applyOAuthProfile(user, userInfo);
-        OAuthTokenPair tokens = authService.finalizeOAuthLogin(user, provider);
+        OAuthTokenPair tokens = oAuthAuthService.finalizeOAuthLogin(user, provider);
 
         String redirectUrl = UriComponentsBuilder.fromUriString(frontendBase() + ApiConstants.Auth_Callback)
                 .queryParam(CodeConstants.TOKEN, tokens.accessToken())
@@ -77,7 +75,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
     }
 
     private @NonNull String frontendBase() {
-        return frontendUrl.split(",")[0].trim();
+        return corsProperties.app().primaryFrontendUrl();
     }
 
     private @NonNull String errorRedirect(String code) {

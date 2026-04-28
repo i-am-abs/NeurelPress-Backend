@@ -1,11 +1,12 @@
 package com.neurelpress.blogs.service.impl;
 
+import com.neurelpress.blogs.dto.properties.NeuralPressCorsProperties;
+import com.neurelpress.blogs.dto.properties.NeuralPressMailProperties;
 import com.neurelpress.blogs.service.EmailService;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.MailException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -18,17 +19,13 @@ import org.springframework.stereotype.Service;
 public class EmailServiceImpl implements EmailService {
 
     private final JavaMailSender mailSender;
-
-    @Value("${neuralpress.mail.from:noreply@neuralpress.dev}")
-    private String fromEmail;
-
-    @Value("${neuralpress.app.frontend-url:http://localhost:3000}")
-    private String frontendUrl;
+    private final NeuralPressMailProperties mailProperties;
+    private final NeuralPressCorsProperties corsProperties;
 
     @Override
     @Async
     public void sendVerificationEmail(String toEmail, String username, String token) {
-        String verifyUrl = frontendUrl + "/auth/verify-email?token=" + token;
+        String verifyUrl = corsProperties.app().primaryFrontendUrl() + "/auth/verify-email?token=" + token;
         String html = """
                 <!DOCTYPE html>
                 <html>
@@ -52,7 +49,7 @@ public class EmailServiceImpl implements EmailService {
     @Override
     @Async
     public void sendPasswordResetEmail(String toEmail, String username, String token) {
-        String resetUrl = frontendUrl + "/auth/reset-password?token=" + token;
+        String resetUrl = corsProperties.app().primaryFrontendUrl() + "/auth/reset-password?token=" + token;
         String html = """
                 <!DOCTYPE html>
                 <html>
@@ -99,7 +96,7 @@ public class EmailServiceImpl implements EmailService {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
-            helper.setFrom(fromEmail);
+            helper.setFrom(mailProperties.from());
             helper.setTo(to);
             helper.setSubject(subject);
             helper.setText(html, true);

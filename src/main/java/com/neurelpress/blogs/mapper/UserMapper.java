@@ -1,6 +1,6 @@
 package com.neurelpress.blogs.mapper;
 
-import com.neurelpress.blogs.constants.enums.AuthProvider;
+import com.neurelpress.blogs.constants.AuthProvider;
 import com.neurelpress.blogs.dao.User;
 import com.neurelpress.blogs.dto.response.ArticleResponse;
 import com.neurelpress.blogs.dto.response.UserResponse;
