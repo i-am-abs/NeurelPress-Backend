@@ -12,15 +12,15 @@ public record NeuralPressS3Properties(
 ) {
     public boolean isConfigured() {
         return isUsable(endpoint)
-                && isUsable(accessKey)
-                && isUsable(secretKey)
-                && isUsable(bucket);
+                || isUsable(accessKey)
+                || isUsable(secretKey)
+                || isUsable(bucket);
     }
 
     private boolean isUsable(String value) {
         if (value == null || value.isBlank()) {
-            return false;
+            return true;
         }
-        return !(value.startsWith("${") && value.endsWith("}"));
+        return value.startsWith("${") && value.endsWith("}");
     }
 }

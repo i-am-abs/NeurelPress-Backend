@@ -50,5 +50,9 @@ public enum ApiConstants {
     public static final String Search = "/search";
     public static final String Really_Simple_Syndication = "/rss";
     public static final String Today = "/today";
+    public static final String Random = "/random";
+    public static final String Random_Front = "/random/front-screen";
+    public static final String Random_By_Domain = "/random/domain/{domain}";
+    public static final String Punchline_By_Domain = "/punchline/domain/{domain}";
 
 }

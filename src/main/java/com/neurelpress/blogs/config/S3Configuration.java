@@ -17,7 +17,7 @@ public class S3Configuration {
 
     @Bean
     public S3Client s3Client(NeuralPressS3Properties properties) {
-        if (!properties.isConfigured()) {
+        if (properties.isConfigured()) {
             return null;
         }
 

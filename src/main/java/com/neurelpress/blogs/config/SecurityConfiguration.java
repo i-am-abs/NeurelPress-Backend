@@ -1,7 +1,7 @@
 package com.neurelpress.blogs.config;
 
-import com.neurelpress.blogs.dto.properties.NeuralPressCorsProperties;
 import com.neurelpress.blogs.constants.ApiConstants;
+import com.neurelpress.blogs.dto.properties.NeuralPressCorsProperties;
 import com.neurelpress.blogs.security.jwt.JwtAuthenticationFilter;
 import com.neurelpress.blogs.security.oauth2.OAuth2AuthenticationSuccessHandler;
 import lombok.RequiredArgsConstructor;
