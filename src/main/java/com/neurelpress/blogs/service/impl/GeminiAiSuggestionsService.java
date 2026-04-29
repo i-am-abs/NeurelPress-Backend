@@ -85,6 +85,44 @@ public class GeminiAiSuggestionsService implements AiSuggestionsService {
         return generateContent(prompt);
     }
 
+    @Override
+    public String humanize(String contentSnippet) {
+        if (isConfigured() || contentSnippet.isBlank()) {
+            return contentSnippet;
+        }
+
+        String prompt = CodeConstants.HUMANIZE_PROMPT.formatted(
+                truncate(contentSnippet, 8000)
+        );
+        return generateContent(prompt);
+    }
+
+    @Override
+    public Map<String, Object> analyzeTone(String contentSnippet) {
+        if (isConfigured() || contentSnippet.isBlank()) {
+            return Map.of("tone", "neutral", "confidence", 0.0, "notes", "No content provided");
+        }
+
+        String prompt = CodeConstants.TONE_ANALYSIS_PROMPT.formatted(
+                truncate(contentSnippet, 4000)
+        );
+        String response = generateContent(prompt);
+        return parseToneJson(response);
+    }
+
+    @Override
+    public String generateByTone(String contentSnippet, String tone) {
+        if (isConfigured() || contentSnippet.isBlank()) {
+            return contentSnippet;
+        }
+
+        String prompt = CodeConstants.TONE_GENERATION_PROMPT.formatted(
+                truncate(tone, 60),
+                truncate(contentSnippet, 8000)
+        );
+        return generateContent(prompt);
+    }
+
     private boolean isConfigured() {
         return aiProperties.gemini().isConfigured();
     }
@@ -195,6 +233,33 @@ public class GeminiAiSuggestionsService implements AiSuggestionsService {
             log.warn("Failed parsing tag array: {}", e.getMessage());
 
             return Collections.emptyList();
+        }
+    }
+
+    private Map<String, Object> parseToneJson(String response) {
+        if (response == null || response.isBlank()) {
+            return Map.of("tone", "neutral", "confidence", 0.0, "notes", "No AI response");
+        }
+
+        try {
+            String normalized = response.trim();
+            if (!normalized.startsWith("{")) {
+                int start = normalized.indexOf('{');
+                int end = normalized.lastIndexOf('}');
+                if (start >= 0 && end > start) {
+                    normalized = normalized.substring(start, end + 1);
+                }
+            }
+
+            JsonNode node = objectMapper.readTree(normalized);
+            return Map.of(
+                    "tone", node.path("tone").asText("neutral"),
+                    "confidence", node.path("confidence").asDouble(0.0),
+                    "notes", node.path("notes").asText("")
+            );
+        } catch (Exception e) {
+            log.warn("Failed parsing tone analysis: {}", e.getMessage());
+            return Map.of("tone", "neutral", "confidence", 0.0, "notes", "Tone analysis parsing failed");
         }
     }
 }

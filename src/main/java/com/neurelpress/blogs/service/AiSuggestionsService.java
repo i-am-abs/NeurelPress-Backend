@@ -9,4 +9,10 @@ public interface AiSuggestionsService {
     String suggestTitle(String contentSnippet);
 
     String summarize(String contentSnippet);
+
+    String humanize(String contentSnippet);
+
+    java.util.Map<String, Object> analyzeTone(String contentSnippet);
+
+    String generateByTone(String contentSnippet, String tone);
 }

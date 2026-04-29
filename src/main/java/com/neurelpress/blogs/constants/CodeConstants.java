@@ -1,9 +1,5 @@
 package com.neurelpress.blogs.constants;
 
-/**
- * Shared string/numeric constants as an enum type (no instances) to align
- * with enum-only constants convention while preserving compile-time literals.
- */
 public enum CodeConstants {
     ;
     public static final String BEARER = "Bearer";
@@ -51,6 +47,28 @@ public enum CodeConstants {
     public static final String SUMMARY_PROMPT = """
             Summarize this technical article in 1-2 sentences for a meta description (max 160 chars).
             Return ONLY the summary.
+            Content: %s
+            """;
+
+    public static final String HUMANIZE_PROMPT = """
+            Rewrite the following article text to sound more natural and human while preserving original meaning.
+            Keep facts intact, avoid robotic repetition, and maintain clear readability.
+            Return ONLY the rewritten content in markdown.
+            Content: %s
+            """;
+
+    public static final String TONE_ANALYSIS_PROMPT = """
+            Analyze the tone of the blog content below.
+            Return ONLY a JSON object with keys: tone, confidence, notes.
+            confidence must be a number from 0 to 1.
+            notes should be a short sentence.
+            Content: %s
+            """;
+
+    public static final String TONE_GENERATION_PROMPT = """
+            Rewrite the following content in a %s tone.
+            Keep factual accuracy and markdown structure.
+            Return ONLY the rewritten content.
             Content: %s
             """;
     public static final Integer WORDS_PER_MINUTE = 200;

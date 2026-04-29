@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -26,5 +27,20 @@ public class NoopAiSuggestionsService implements AiSuggestionsService {
     @Override
     public String summarize(String contentSnippet) {
         return null;
+    }
+
+    @Override
+    public String humanize(String contentSnippet) {
+        return contentSnippet;
+    }
+
+    @Override
+    public Map<String, Object> analyzeTone(String contentSnippet) {
+        return Map.of("tone", "neutral", "confidence", 0.0, "notes", "AI provider not configured");
+    }
+
+    @Override
+    public String generateByTone(String contentSnippet, String tone) {
+        return contentSnippet;
     }
 }

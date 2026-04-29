@@ -1,9 +1,5 @@
 package com.neurelpress.blogs.constants;
 
-/**
- * API route constants kept as compile-time literals for Spring annotations.
- * Declared in an enum type (no instances) per project convention.
- */
 public enum ApiConstants {
     ;
     public static final String Api_Ai = "/api/ai";
@@ -25,6 +21,9 @@ public enum ApiConstants {
     public static final String Suggested_Tags = "/suggest-tags";
     public static final String Suggested_Title = "/suggest-title";
     public static final String Suggested_Summary = "/suggest-summary";
+    public static final String Humanize = "/humanize";
+    public static final String Analyze_Tone = "/analyze-tone";
+    public static final String Generate_By_Tone = "/generate-by-tone";
 
     public static final String Register = "/register";
     public static final String Login = "/login";

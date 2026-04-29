@@ -54,4 +54,28 @@ public class AiController {
         log.info("Suggested summary: {}", summary);
         return ResponseEntity.ok(Map.of(CodeConstants.SUMMARY, summary != null ? summary : ""));
     }
+
+    @PostMapping(ApiConstants.Humanize)
+    @Operation(summary = "Humanize AI-generated content")
+    public ResponseEntity<Map<String, String>> humanize(@AuthenticationPrincipal UserPrincipal userPrincipal, @RequestBody Map<String, String> body) {
+        String content = body.getOrDefault(CodeConstants.CONTENT, "");
+        String humanized = aiSuggestionsService.humanize(content);
+        return ResponseEntity.ok(Map.of(CodeConstants.CONTENT, humanized != null ? humanized : ""));
+    }
+
+    @PostMapping(ApiConstants.Analyze_Tone)
+    @Operation(summary = "Analyze content tone")
+    public ResponseEntity<Map<String, Object>> analyzeTone(@AuthenticationPrincipal UserPrincipal userPrincipal, @RequestBody Map<String, String> body) {
+        String content = body.getOrDefault(CodeConstants.CONTENT, "");
+        return ResponseEntity.ok(aiSuggestionsService.analyzeTone(content));
+    }
+
+    @PostMapping(ApiConstants.Generate_By_Tone)
+    @Operation(summary = "Generate content in a chosen tone")
+    public ResponseEntity<Map<String, String>> generateByTone(@AuthenticationPrincipal UserPrincipal userPrincipal, @RequestBody Map<String, String> body) {
+        String content = body.getOrDefault(CodeConstants.CONTENT, "");
+        String tone = body.getOrDefault("tone", "professional");
+        String rewritten = aiSuggestionsService.generateByTone(content, tone);
+        return ResponseEntity.ok(Map.of(CodeConstants.CONTENT, rewritten != null ? rewritten : ""));
+    }
 }
