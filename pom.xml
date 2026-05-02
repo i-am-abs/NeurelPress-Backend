@@ -46,6 +46,7 @@
 		</dependency>
 
 
+		<!-- JDBC driver for Supabase (Postgres-compatible) -->
 		<dependency>
 			<groupId>org.postgresql</groupId>
 			<artifactId>postgresql</artifactId>

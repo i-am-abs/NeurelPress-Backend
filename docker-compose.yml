@@ -1,0 +1,32 @@
+# API + Redis. Database is Supabase — set SUPABASE_* in .env (see .env.example).
+services:
+  redis-db:
+    image: redis:7-alpine
+    networks:
+      - neurel-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 5
+
+  neurel-app:
+    build: .
+    image: neurel-press:latest
+    depends_on:
+      redis-db:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATA_REDIS_HOST: redis-db
+      SUPABASE_DB_URL: ${SUPABASE_DB_URL}
+      SUPABASE_DB_USER: ${SUPABASE_DB_USER}
+      SUPABASE_DB_PASSWORD: ${SUPABASE_DB_PASSWORD}
+    ports:
+      - "8080:8080"
+    networks:
+      - neurel-network
+
+networks:
+  neurel-network:
+    driver: bridge

@@ -14,7 +14,6 @@ RUN jlink \
     --no-header-files \
     --compress=2 \
     --output /jre-min
-
 FROM gcr.io/distroless/base-debian12:nonroot
 WORKDIR /app
 COPY --from=build /jre-min /jre
@@ -24,7 +23,6 @@ COPY --from=build /workspace/target/extracted/snapshot-dependencies/ ./
 COPY --from=build /workspace/target/extracted/application/ ./
 ENV PATH="/jre/bin:$PATH" \
     SPRING_PROFILES_ACTIVE=prod \
-    SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/neuralpress \
     SPRING_DATA_REDIS_HOST=localhost
 EXPOSE 8080
 ENTRYPOINT ["java", "org.springframework.boot.loader.launch.JarLauncher"]

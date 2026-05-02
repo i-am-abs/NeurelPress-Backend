@@ -12,3 +12,4 @@ blogs.iml
 application.properties
 application-dev.properties
 firebase-service-account.json
+.env
