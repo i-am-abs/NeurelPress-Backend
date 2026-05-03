@@ -28,6 +28,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -193,11 +194,15 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public void requestLoginOtp(@NonNull OtpRequest request) {
-        User user = userRepository.findByEmail(request.email())
-                .orElseThrow(() -> new ResourceNotFoundException(CodeConstants.USER, CodeConstants.Email, request.email()));
-
+        Optional<User> userOpt = userRepository.findByEmail(request.email());
+        if (userOpt.isEmpty()) {
+            log.info("OTP request ignored: no user with that email");
+            return;
+        }
+        User user = userOpt.get();
         if (user.getProvider() != AuthProvider.LOCAL) {
-            throw new UnauthorizedException("OTP login is only available for email/password accounts");
+            log.info("OTP request ignored: non-local account");
+            return;
         }
 
         emailOtpRepository.deleteByUserIdOrExpired(user.getId(), Instant.now());

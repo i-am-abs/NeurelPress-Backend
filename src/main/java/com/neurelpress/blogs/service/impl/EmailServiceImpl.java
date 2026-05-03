@@ -2,6 +2,7 @@ package com.neurelpress.blogs.service.impl;
 
 import com.neurelpress.blogs.dto.properties.NeuralPressCorsProperties;
 import com.neurelpress.blogs.dto.properties.NeuralPressMailProperties;
+import com.neurelpress.blogs.exception.EmailDeliveryException;
 import com.neurelpress.blogs.service.EmailService;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
@@ -42,7 +43,7 @@ public class EmailServiceImpl implements EmailService {
                 </body>
                 </html>
                 """.formatted(username, verifyUrl, verifyUrl, verifyUrl);
-        sendHtml(toEmail, "Verify your NeuralPress email", html);
+        sendHtml(toEmail, "Verify your NeuralPress email", html, false);
         log.info("Verification email sent to {} for user {}", toEmail, username);
     }
 
@@ -65,12 +66,11 @@ public class EmailServiceImpl implements EmailService {
                 </body>
                 </html>
                 """.formatted(username, resetUrl);
-        sendHtml(toEmail, "Reset your NeuralPress password", html);
+        sendHtml(toEmail, "Reset your NeuralPress password", html, false);
         log.info("Password reset email sent to {} for user {}", toEmail, username);
     }
 
     @Override
-    @Async
     public void sendLoginOtpEmail(String toEmail, String username, String otpCode) {
         String html = """
                 <!DOCTYPE html>
@@ -87,11 +87,11 @@ public class EmailServiceImpl implements EmailService {
                 </body>
                 </html>
                 """.formatted(username, otpCode);
-        sendHtml(toEmail, "Your NeuralPress login code", html);
+        sendHtml(toEmail, "Your NeuralPress login code", html, true);
         log.info("Login OTP email sent to {} for user {}", toEmail, username);
     }
 
-    private void sendHtml(String to, String subject, String html) {
+    private void sendHtml(String to, String subject, String html, boolean requireDelivery) {
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
@@ -104,7 +104,10 @@ public class EmailServiceImpl implements EmailService {
             mailSender.send(message);
             log.debug("Email sent to {}", to);
         } catch (MessagingException | MailException e) {
-            log.error("Failed to send email to {}: {}", to, e.getMessage());
+            log.error("Failed to send email to {}: {}", to, e.getMessage(), e);
+            if (requireDelivery) {
+                throw new EmailDeliveryException("Failed to send login OTP email", e);
+            }
         }
     }
 }

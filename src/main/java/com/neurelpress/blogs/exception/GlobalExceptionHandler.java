@@ -43,6 +43,13 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.UNAUTHORIZED, ex.getMessage());
     }
 
+    @ExceptionHandler(EmailDeliveryException.class)
+    public ResponseEntity<ErrorResponse> handleEmailDelivery(@NonNull EmailDeliveryException ex) {
+        log.error("Email delivery failed: {}", ex.getMessage());
+        return buildResponse(HttpStatus.SERVICE_UNAVAILABLE,
+                "We could not send email right now. Check SMTP settings or try again later.");
+    }
+
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<ErrorResponse> handleBadCredentials(@NonNull BadCredentialsException ex) {
         log.info("Invalid credentials: {}", ex.getMessage());
