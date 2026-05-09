@@ -19,8 +19,6 @@ public interface UsageEventRepository extends JpaRepository<UsageEvent, UUID> {
 
     long countByCreatedAtAfter(Instant since);
 
-    long countByEventNameAndCreatedAtAfter(String eventName, Instant since);
-
     interface EventCount {
         String getName();
         long getCount();

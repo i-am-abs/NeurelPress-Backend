@@ -11,6 +11,4 @@ import java.util.UUID;
 public interface CrashReportRepository extends JpaRepository<CrashReport, UUID> {
 
     long countByCreatedAtAfter(Instant since);
-
-    long countBySourceAndCreatedAtAfter(String source, Instant since);
 }
