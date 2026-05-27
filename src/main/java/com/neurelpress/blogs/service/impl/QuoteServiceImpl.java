@@ -2,8 +2,8 @@ package com.neurelpress.blogs.service.impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.neurelpress.blogs.dto.properties.NeuralPressAiProperties;
 import com.neurelpress.blogs.dao.Quote;
+import com.neurelpress.blogs.dto.properties.NeuralPressAiProperties;
 import com.neurelpress.blogs.dto.response.QuoteResponse;
 import com.neurelpress.blogs.repository.QuoteRepository;
 import com.neurelpress.blogs.service.QuoteService;
@@ -14,7 +14,6 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestClient;
 
 import java.time.LocalDate;
@@ -26,14 +25,12 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class QuoteServiceImpl implements QuoteService {
-
     private final QuoteRepository quoteRepository;
     private final RestClient geminiRestClient;
     private final ObjectMapper objectMapper;
     private final NeuralPressAiProperties aiProperties;
 
     @Override
-    @Transactional(readOnly = true)
     @Cacheable(cacheNames = "quoteOfTheDay")
     public QuoteResponse getQuoteOfTheDay() {
         List<Quote> active = quoteRepository.findAllActive();
@@ -99,7 +96,6 @@ public class QuoteServiceImpl implements QuoteService {
                             "maxOutputTokens", 120
                     )
             );
-
             String response = geminiRestClient.post()
                     .uri(uriBuilder -> uriBuilder
                             .path("/models/{model}:generateContent")
@@ -109,12 +105,10 @@ public class QuoteServiceImpl implements QuoteService {
                     .body(body)
                     .retrieve()
                     .body(String.class);
-
             String generatedText = extractTextFromGemini(response);
             if (generatedText.isBlank()) {
                 return null;
             }
-
             JsonNode candidate = objectMapper.readTree(generatedText);
             String text = candidate.path("text").asText("").trim();
             String author = candidate.path("author").asText("NeurelPress AI").trim();
@@ -162,7 +156,6 @@ public class QuoteServiceImpl implements QuoteService {
                         "maxOutputTokens", 160
                 )
         );
-
         String response = geminiRestClient.post()
                 .uri(uriBuilder -> uriBuilder
                         .path("/models/{model}:generateContent")
@@ -172,7 +165,6 @@ public class QuoteServiceImpl implements QuoteService {
                 .body(body)
                 .retrieve()
                 .body(String.class);
-
         return extractTextFromGemini(response);
     }
 

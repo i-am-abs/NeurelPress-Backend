@@ -1,7 +1,7 @@
 package com.neurelpress.blogs.service.impl;
 
-import com.neurelpress.blogs.constants.CodeConstants;
 import com.neurelpress.blogs.constants.AuthProvider;
+import com.neurelpress.blogs.constants.CodeConstants;
 import com.neurelpress.blogs.dao.RefreshToken;
 import com.neurelpress.blogs.dao.User;
 import com.neurelpress.blogs.dto.response.AuthResponse;
@@ -20,7 +20,6 @@ import java.time.Instant;
 @Service
 @RequiredArgsConstructor
 public class AuthTokenService {
-
     private final JwtTokenProvider tokenProvider;
     private final RefreshTokenRepository refreshTokenRepository;
     private final UserRepository userRepository;
@@ -63,4 +62,3 @@ public class AuthTokenService {
         return refreshTokenStr;
     }
 }
-

@@ -9,7 +9,7 @@ RUN mvn -B -q clean package -DskipTests \
     && mkdir -p /workspace/target/extracted \
     && java -Djarmode=layertools -jar target/*.jar extract --destination /workspace/target/extracted
 RUN jlink \
-    --add-modules java.base,java.logging,java.naming,java.sql,java.management,java.instrument,java.security.jgss,jdk.crypto.ec,jdk.unsupported,java.desktop \
+    --add-modules java.base,java.logging,java.naming,java.management,java.instrument,java.security.jgss,jdk.crypto.ec,jdk.unsupported,java.desktop \
     --strip-debug \
     --no-man-pages \
     --no-header-files \

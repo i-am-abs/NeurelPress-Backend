@@ -15,7 +15,6 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -30,18 +29,29 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class AnalyticsServiceImpl implements AnalyticsService {
-
     private static final int MAX_STACK_LEN = 7_500;
     private static final int MAX_MESSAGE_LEN = 256;
     private static final String SOURCE_SERVER = "server";
     private static final String SOURCE_CLIENT = "client";
-
     private final UsageEventRepository usageEventRepository;
     private final CrashReportRepository crashReportRepository;
 
+    private static @NonNull String stack(@NonNull Throwable t) {
+        try (StringWriter sw = new StringWriter(); PrintWriter pw = new PrintWriter(sw)) {
+            t.printStackTrace(pw);
+            return sw.toString();
+        } catch (Exception e) {
+            return t.toString();
+        }
+    }
+
+    private static @Nullable String truncate(@Nullable String input, int max) {
+        if (input == null) return null;
+        return input.length() <= max ? input : input.substring(0, max);
+    }
+
     @Override
     @Async
-    @Transactional
     public void trackEvent(@NonNull UsageEventRequest request,
                            @Nullable UUID userId,
                            @Nullable HttpServletRequest http) {
@@ -62,7 +72,6 @@ public class AnalyticsServiceImpl implements AnalyticsService {
 
     @Override
     @Async
-    @Transactional
     public void reportClientCrash(@NonNull CrashReportRequest request,
                                   @Nullable UUID userId,
                                   @Nullable HttpServletRequest http) {
@@ -84,7 +93,6 @@ public class AnalyticsServiceImpl implements AnalyticsService {
 
     @Override
     @Async
-    @Transactional
     public void reportServerCrash(@NonNull Throwable error,
                                   @Nullable HttpServletRequest http,
                                   int status) {
@@ -102,12 +110,10 @@ public class AnalyticsServiceImpl implements AnalyticsService {
     }
 
     @Override
-    @Transactional(readOnly = true)
     public AnalyticsSummaryResponse summary(int days) {
         Instant since = Instant.now().minus(Math.max(days, 1), ChronoUnit.DAYS);
         long totalEvents = usageEventRepository.countByCreatedAtAfter(since);
         long totalCrashes = crashReportRepository.countByCreatedAtAfter(since);
-
         Map<String, Long> eventsByName = new LinkedHashMap<>();
         List<AnalyticsSummaryResponse.TopEvent> topEvents = usageEventRepository.countByEventSince(since)
                 .stream()
@@ -116,21 +122,6 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                     return new AnalyticsSummaryResponse.TopEvent(p.getName(), p.getCount());
                 })
                 .toList();
-
         return new AnalyticsSummaryResponse(totalEvents, totalCrashes, eventsByName, topEvents);
-    }
-
-    private static @NonNull String stack(@NonNull Throwable t) {
-        try (StringWriter sw = new StringWriter(); PrintWriter pw = new PrintWriter(sw)) {
-            t.printStackTrace(pw);
-            return sw.toString();
-        } catch (Exception e) {
-            return t.toString();
-        }
-    }
-
-    private static @Nullable String truncate(@Nullable String input, int max) {
-        if (input == null) return null;
-        return input.length() <= max ? input : input.substring(0, max);
     }
 }

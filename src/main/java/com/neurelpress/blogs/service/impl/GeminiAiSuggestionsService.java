@@ -2,8 +2,8 @@ package com.neurelpress.blogs.service.impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.neurelpress.blogs.dto.properties.NeuralPressAiProperties;
 import com.neurelpress.blogs.constants.CodeConstants;
+import com.neurelpress.blogs.dto.properties.NeuralPressAiProperties;
 import com.neurelpress.blogs.service.AiSuggestionsService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,65 +23,51 @@ import java.util.stream.StreamSupport;
 @RequiredArgsConstructor
 @ConditionalOnProperty(name = "neuralpress.ai-provider", havingValue = "gemini", matchIfMissing = true)
 public class GeminiAiSuggestionsService implements AiSuggestionsService {
-
     private final RestClient geminiRestClient;
     private final ObjectMapper objectMapper;
     private final NeuralPressAiProperties aiProperties;
 
     private static @NonNull String truncate(String s, int max) {
-
         if (s == null) {
             return "";
         }
-
         return s.length() <= max ? s : s.substring(0, max);
     }
 
     @Override
     public List<String> suggestTags(String title, String contentSnippet) {
-
         if (isConfigured()) {
             log.warn("Gemini API key not configured. Skipping tag suggestions.");
             return Collections.emptyList();
         }
-
         String prompt = CodeConstants.TAG_SUGGESTION_PROMPT.formatted(
                 truncate(title, 300),
                 truncate(contentSnippet, 1500)
         );
-
         String response = generateContent(prompt);
-
         log.debug("Gemini tag suggestion response: {}", response);
-
         return parseStringArray(response);
     }
 
     @Override
     public String suggestTitle(String contentSnippet) {
-
         if (isConfigured() || contentSnippet.isBlank()) {
             return null;
         }
-
         String prompt = CodeConstants.TITLE_SUGGESTION_PROMPT.formatted(
                 truncate(contentSnippet, 2000)
         );
-
         return generateContent(prompt);
     }
 
     @Override
     public String summarize(String contentSnippet) {
-
         if (isConfigured() || contentSnippet.isBlank()) {
             return null;
         }
-
         String prompt = CodeConstants.SUMMARY_PROMPT.formatted(
                 truncate(contentSnippet, 4000)
         );
-
         return generateContent(prompt);
     }
 
@@ -90,7 +76,6 @@ public class GeminiAiSuggestionsService implements AiSuggestionsService {
         if (isConfigured() || contentSnippet.isBlank()) {
             return contentSnippet;
         }
-
         String prompt = CodeConstants.HUMANIZE_PROMPT.formatted(
                 truncate(contentSnippet, 8000)
         );
@@ -102,7 +87,6 @@ public class GeminiAiSuggestionsService implements AiSuggestionsService {
         if (isConfigured() || contentSnippet.isBlank()) {
             return Map.of("tone", "neutral", "confidence", 0.0, "notes", "No content provided");
         }
-
         String prompt = CodeConstants.TONE_ANALYSIS_PROMPT.formatted(
                 truncate(contentSnippet, 4000)
         );
@@ -115,7 +99,6 @@ public class GeminiAiSuggestionsService implements AiSuggestionsService {
         if (isConfigured() || contentSnippet.isBlank()) {
             return contentSnippet;
         }
-
         String prompt = CodeConstants.TONE_GENERATION_PROMPT.formatted(
                 truncate(tone, 60),
                 truncate(contentSnippet, 8000)
@@ -129,7 +112,6 @@ public class GeminiAiSuggestionsService implements AiSuggestionsService {
 
     private @NonNull String generateContent(String prompt) {
         try {
-
             Map<String, Object> body = Map.of(
                     "contents", List.of(
                             Map.of(
@@ -143,7 +125,6 @@ public class GeminiAiSuggestionsService implements AiSuggestionsService {
                             "maxOutputTokens", 512
                     )
             );
-
             String response = geminiRestClient.post()
                     .uri(uriBuilder -> uriBuilder
                             .path("/models/{model}:generateContent")
@@ -153,70 +134,50 @@ public class GeminiAiSuggestionsService implements AiSuggestionsService {
                     .body(body)
                     .retrieve()
                     .body(String.class);
-
             return extractTextFromResponse(response);
-
         } catch (Exception e) {
-
             log.warn("Gemini API call failed: {}", e.getMessage());
-
             return "";
         }
     }
 
     private @NonNull String extractTextFromResponse(String json) {
-
         try {
-
             JsonNode root = objectMapper.readTree(json);
-
             JsonNode candidates = root.path("candidates");
-
             if (candidates.isEmpty()) {
                 return "";
             }
-
             JsonNode parts = candidates
                     .get(0)
                     .path("content")
                     .path("parts");
-
             if (parts.isEmpty()) {
                 return "";
             }
-
             return parts
                     .get(0)
                     .path("text")
                     .asText("")
                     .trim();
-
         } catch (Exception e) {
-
             log.warn("Failed parsing Gemini response");
-
             return "";
         }
     }
 
     private List<String> parseStringArray(String response) {
-
         if (response == null || response.isBlank()) {
             return Collections.emptyList();
         }
-
         try {
-
             String cleaned = response
                     .replaceAll("^\\s*\\[?|\\]?\\s*$", "")
                     .trim();
-
             if (cleaned.isEmpty()) {
                 return Collections.emptyList();
             }
-
             JsonNode arr = objectMapper.readTree("[" + cleaned + "]");
-
             return StreamSupport.stream(arr.spliterator(), false)
                     .map(JsonNode::asText)
                     .map(s -> s
@@ -227,11 +188,8 @@ public class GeminiAiSuggestionsService implements AiSuggestionsService {
                     .filter(s -> !s.isEmpty())
                     .limit(5)
                     .toList();
-
         } catch (Exception e) {
-
             log.warn("Failed parsing tag array: {}", e.getMessage());
-
             return Collections.emptyList();
         }
     }
@@ -240,7 +198,6 @@ public class GeminiAiSuggestionsService implements AiSuggestionsService {
         if (response == null || response.isBlank()) {
             return Map.of("tone", "neutral", "confidence", 0.0, "notes", "No AI response");
         }
-
         try {
             String normalized = response.trim();
             if (!normalized.startsWith("{")) {
@@ -250,7 +207,6 @@ public class GeminiAiSuggestionsService implements AiSuggestionsService {
                     normalized = normalized.substring(start, end + 1);
                 }
             }
-
             JsonNode node = objectMapper.readTree(normalized);
             return Map.of(
                     "tone", node.path("tone").asText("neutral"),

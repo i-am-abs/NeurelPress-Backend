@@ -4,42 +4,46 @@ import com.neurelpress.blogs.constants.ArticleStatus;
 import com.neurelpress.blogs.dao.Article;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Modifying;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
+import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.data.mongodb.repository.Query;
+import org.springframework.data.mongodb.repository.Update;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
 import java.util.UUID;
 
 @Repository
-public interface ArticleRepository extends JpaRepository<Article, UUID> {
+public interface ArticleRepository extends MongoRepository<Article, UUID> {
 
     Optional<Article> findBySlug(String slug);
 
-    @Query("SELECT a FROM Article a JOIN FETCH a.author WHERE a.slug = :slug AND a.status = 'PUBLISHED'")
-    Optional<Article> findPublishedBySlug(@Param("slug") String slug);
+    Optional<Article> findBySlugAndStatus(String slug, ArticleStatus status);
+
+    default Optional<Article> findPublishedBySlug(String slug) {
+        return findBySlugAndStatus(slug, ArticleStatus.PUBLISHED);
+    }
 
     Page<Article> findByStatusOrderByPublishedAtDesc(ArticleStatus status, Pageable pageable);
 
+    @Query("{ 'author.$id': ?0, 'status': ?1 }")
     Page<Article> findByAuthorIdAndStatusOrderByCreatedAtDesc(UUID authorId, ArticleStatus status, Pageable pageable);
 
+    @Query("{ 'author.$id': ?0 }")
     Page<Article> findByAuthorIdOrderByCreatedAtDesc(UUID authorId, Pageable pageable);
 
-    @Query("SELECT a FROM Article a JOIN a.tags t WHERE t.slug = :tagSlug AND a.status = 'PUBLISHED' ORDER BY a.publishedAt DESC")
-    Page<Article> findByTagSlug(@Param("tagSlug") String tagSlug, Pageable pageable);
+    @Query(value = "{ 'tags.slug': ?0, 'status': 'PUBLISHED' }", sort = "{ 'publishedAt': -1 }")
+    Page<Article> findByTagSlug(String tagSlug, Pageable pageable);
 
-    @Modifying
-    @Query("UPDATE Article a SET a.views = a.views + 1 WHERE a.id = :id")
-    void incrementViews(@Param("id") UUID id);
+    @Query("{ '_id': ?0 }")
+    @Update("{ '$inc': { 'views': 1 } }")
+    void incrementViews(UUID id);
 
-    @Modifying
-    @Query("UPDATE Article a SET a.claps = a.claps + 1 WHERE a.id = :id")
-    void incrementClaps(@Param("id") UUID id);
+    @Query("{ '_id': ?0 }")
+    @Update("{ '$inc': { 'claps': 1 } }")
+    void incrementClaps(UUID id);
 
     boolean existsBySlug(String slug);
 
-    @Query("SELECT COUNT(a) FROM Article a WHERE a.author.id = :authorId AND a.status = 'PUBLISHED'")
-    long countPublishedByAuthor(@Param("authorId") UUID authorId);
+    @Query(value = "{ 'author.$id': ?0, 'status': 'PUBLISHED' }", count = true)
+    long countPublishedByAuthor(UUID authorId);
 }

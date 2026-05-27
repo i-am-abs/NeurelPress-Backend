@@ -10,7 +10,6 @@ import org.springframework.web.multipart.MultipartFile;
 @Service
 @ConditionalOnMissingBean(StorageService.class)
 public class FallbackStorageServiceImpl implements StorageService {
-
     @Override
     public String uploadImage(MultipartFile file, String folder) {
         log.warn("S3 not configured, using fallback upload URL for folder={}", folder);

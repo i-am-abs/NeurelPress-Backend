@@ -66,10 +66,18 @@ public class JwtTokenProvider {
         return UUID.fromString(parse(token).getSubject());
     }
 
+    public Claims getClaimsFromToken(String token) {
+        return parse(token);
+    }
+
     public boolean validateToken(String token) {
         try {
             Claims claims = parse(token);
-            return TYPE_ACCESS.equals(claims.get(CLAIM_TYPE, String.class));
+            if (claims.getSubject() == null) {
+                return false;
+            }
+            UUID.fromString(claims.getSubject());
+            return true;
         } catch (JwtException | IllegalArgumentException e) {
             log.debug("Invalid JWT token: {}", e.getMessage());
             return false;

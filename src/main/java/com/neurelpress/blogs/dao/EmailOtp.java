@@ -1,33 +1,22 @@
 package com.neurelpress.blogs.dao;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.Index;
-import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.NoArgsConstructor;
 import lombok.Builder;
-import org.hibernate.annotations.CreationTimestamp;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
+import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.mapping.DBRef;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
 import java.util.UUID;
 
-@Entity
-@Table(
-        name = "email_otps",
-        indexes = {
-                @Index(name = "idx_email_otp_user", columnList = "user_id"),
-                @Index(name = "idx_email_otp_code", columnList = "code")
-        }
-)
+@Document(collection = "email_otps")
+@CompoundIndex(name = "idx_email_otp_user_code", def = "{'user.$id': 1, 'code': 1}")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -36,24 +25,23 @@ import java.util.UUID;
 public class EmailOtp {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+    @Builder.Default
+    private UUID id = UUID.randomUUID();
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
+    @DBRef
     private User user;
 
-    @Column(nullable = false, length = 6)
+    @Indexed
+    private String email;
+
+    @Indexed
     private String code;
 
-    @Column(nullable = false)
     private Instant expiresAt;
 
-    @Column(nullable = false)
     @Builder.Default
     private boolean used = false;
 
-    @CreationTimestamp
+    @CreatedDate
     private Instant createdAt;
 }
-

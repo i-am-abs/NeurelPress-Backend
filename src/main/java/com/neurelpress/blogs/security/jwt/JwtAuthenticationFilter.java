@@ -22,6 +22,8 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.util.UUID;
 
+import io.jsonwebtoken.Claims;
+
 @Slf4j
 @Component
 @Getter
@@ -41,7 +43,62 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (StringUtils.hasText(token) && jwtTokenProvider.validateToken(token)) {
             UUID userId = jwtTokenProvider.getUserIdFromToken(token);
             User user = userRepository.findById(userId).orElse(null);
-            log.info("User: {} logged in", userId);
+
+            if (user == null) {
+                try {
+                    Claims claims = jwtTokenProvider.getClaimsFromToken(token);
+                    String email = claims.get("email", String.class);
+                    if (email != null) {
+                        User existingUser = userRepository.findByEmail(email).orElse(null);
+                        if (existingUser != null && !existingUser.getId().equals(userId)) {
+                            log.info("Deleting existing user record with old ID {} to link to Supabase UUID {}", existingUser.getId(), userId);
+                            userRepository.delete(existingUser);
+                            existingUser.setId(userId);
+                            existingUser.setProvider(com.neurelpress.blogs.constants.AuthProvider.LOCAL);
+                            existingUser.setVerified(true);
+                            user = userRepository.save(existingUser);
+                        } else if (existingUser == null) {
+                            String username = email.split("@")[0].toLowerCase().replaceAll("[^a-z0-9]", "");
+                            if (userRepository.existsByUsername(username)) {
+                                username = username + "-" + UUID.randomUUID().toString().substring(0, 6);
+                            }
+
+                            String displayName = username;
+                            java.util.Map<String, Object> userMetadata = claims.get("user_metadata", java.util.Map.class);
+                            if (userMetadata != null) {
+                                if (userMetadata.containsKey("displayName")) {
+                                    displayName = (String) userMetadata.get("displayName");
+                                } else if (userMetadata.containsKey("display_name")) {
+                                    displayName = (String) userMetadata.get("display_name");
+                                } else if (userMetadata.containsKey("full_name")) {
+                                    displayName = (String) userMetadata.get("full_name");
+                                }
+                                if (userMetadata.containsKey("username")) {
+                                    String metaUsername = (String) userMetadata.get("username");
+                                    if (metaUsername != null && !metaUsername.isBlank() && !userRepository.existsByUsername(metaUsername)) {
+                                        username = metaUsername;
+                                    }
+                                }
+                            }
+
+                            user = User.builder()
+                                    .id(userId)
+                                    .username(username)
+                                    .email(email)
+                                    .displayName(displayName)
+                                    .provider(com.neurelpress.blogs.constants.AuthProvider.LOCAL)
+                                    .verified(true)
+                                    .build();
+                            user = userRepository.save(user);
+                            log.info("Auto-provisioned new user in MongoDB for email: {}, UUID: {}", email, userId);
+                        } else {
+                            user = existingUser;
+                        }
+                    }
+                } catch (Exception e) {
+                    log.error("Failed to auto-provision user from Supabase claims", e);
+                }
+            }
 
             if (user != null) {
                 UserPrincipal userPrincipal = UserPrincipal.from(user);
@@ -59,7 +116,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private @Nullable String extractToken(@NonNull HttpServletRequest request) {
         String bearerToken = request.getHeader("Authorization");
         if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
-            log.info("Extracted token: {}", bearerToken);
             return bearerToken.substring(7);
         }
         return null;

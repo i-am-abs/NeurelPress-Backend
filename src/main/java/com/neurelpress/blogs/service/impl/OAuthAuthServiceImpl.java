@@ -1,8 +1,8 @@
 package com.neurelpress.blogs.service.impl;
 
 import com.neurelpress.blogs.config.GoogleIdTokenVerifier;
-import com.neurelpress.blogs.constants.CodeConstants;
 import com.neurelpress.blogs.constants.AuthProvider;
+import com.neurelpress.blogs.constants.CodeConstants;
 import com.neurelpress.blogs.dao.User;
 import com.neurelpress.blogs.dto.response.AuthResponse;
 import com.neurelpress.blogs.dto.response.OAuthTokenPair;
@@ -15,7 +15,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.Contract;
 import org.jspecify.annotations.NonNull;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.text.ParseException;
 import java.util.Optional;
@@ -24,35 +23,28 @@ import java.util.UUID;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class OAuthAuthServiceImpl implements OAuthAuthService {
-
     private static final String CLAIM_EMAIL = "email";
     private static final String CLAIM_NAME = "name";
     private static final String CLAIM_PICTURE = "picture";
-
     private final GoogleIdTokenVerifier googleIdTokenVerifier;
     private final UserRepository userRepository;
     private final AuthTokenService authTokenService;
 
     @Override
-    @Transactional
     public AuthResponse signInWithGoogleIdToken(String idToken) {
         JWTClaimsSet claims = googleIdTokenVerifier.verify(idToken)
                 .orElseThrow(() -> new UnauthorizedException("Invalid Google ID token"));
-
         GoogleClaims g = readClaims(claims);
         if (g.email() == null || g.email().isBlank()) {
             throw new UnauthorizedException("Google account did not return an email");
         }
-
         User user = upsertGoogleUser(g);
         authTokenService.recordSignIn(user, AuthProvider.GOOGLE);
         return authTokenService.issueAuthResponse(user);
     }
 
     @Override
-    @Transactional
     public OAuthTokenPair finalizeOAuthLogin(User user, AuthProvider signInVia) {
         authTokenService.recordSignIn(user, signInVia);
         OAuthTokenPair tokenPair = authTokenService.issueOAuthTokenPair(user);
@@ -121,5 +113,6 @@ public class OAuthAuthServiceImpl implements OAuthAuthService {
         }
     }
 
-    private record GoogleClaims(String subject, String email, String name, String picture) {}
+    private record GoogleClaims(String subject, String email, String name, String picture) {
+    }
 }

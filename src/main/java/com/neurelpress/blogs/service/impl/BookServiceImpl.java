@@ -15,7 +15,6 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
@@ -24,12 +23,10 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class BookServiceImpl implements BookService {
-
     private final BookRepository bookRepository;
     private final BookMapper bookMapper;
 
     @Override
-    @Transactional(readOnly = true)
     public PageResponse<BookResponse> getAllBooks(int page, int size) {
         Page<Book> p = bookRepository.findAll(Pageable.ofSize(size).withPage(page));
         log.info("Getting all books with page {} and size {}", page, size);
@@ -37,7 +34,6 @@ public class BookServiceImpl implements BookService {
     }
 
     @Override
-    @Transactional(readOnly = true)
     public BookResponse getBookById(UUID id) {
         Book book = bookRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(CodeConstants.BOOK, CodeConstants.ID, id));
@@ -46,7 +42,6 @@ public class BookServiceImpl implements BookService {
     }
 
     @Override
-    @Transactional(readOnly = true)
     @Cacheable(cacheNames = "topReferencedBooks", key = "#limit")
     public List<BookResponse> getTopReferenced(int limit) {
         List<Book> books = bookRepository.findTopReferenced(Pageable.ofSize(limit));
@@ -55,7 +50,6 @@ public class BookServiceImpl implements BookService {
     }
 
     @Override
-    @Transactional(readOnly = true)
     public PageResponse<BookResponse> searchBooks(String query, int page, int size) {
         Page<Book> p = bookRepository.search(query, Pageable.ofSize(size).withPage(page));
         log.info("Searching books with query {} and page {} and size {}", query, page, size);
@@ -63,7 +57,6 @@ public class BookServiceImpl implements BookService {
     }
 
     @Override
-    @Transactional(readOnly = true)
     public PageResponse<BookResponse> getBooksByCategory(String category, int page, int size) {
         Page<Book> p = bookRepository.findByCategory(category, Pageable.ofSize(size).withPage(page));
         log.info("Getting books by category {} with page {} and size {}", category, page, size);

@@ -18,7 +18,9 @@ import javax.imageio.ImageIO;
 import javax.imageio.ImageWriteParam;
 import javax.imageio.ImageWriter;
 import javax.imageio.stream.ImageOutputStream;
-import java.awt.*;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
+import java.awt.Color;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -35,7 +37,6 @@ public class S3StorageServiceImpl implements StorageService {
     private static final float WEBP_QUALITY = 0.84f;
     private static final float JPEG_QUALITY = 0.88f;
     private static final long MAX_IMAGE_BYTES = 10L * 1024 * 1024;
-
     private final ObjectProvider<S3Client> s3ClientProvider;
     private final NeuralPressS3Properties properties;
 
@@ -46,36 +47,28 @@ public class S3StorageServiceImpl implements StorageService {
             log.warn("S3 is not configured. Returning local placeholder URL.");
             return "https://assets.neuralpress.dev/placeholder.jpg";
         }
-
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("File cannot be empty");
         }
         if (file.getSize() > MAX_IMAGE_BYTES) {
             throw new IllegalArgumentException("Image exceeds 10MB limit");
         }
-
         try {
             OptimizedImage optimizedImage = optimizeImage(file);
-
             String filename = (folder != null && !folder.isBlank() ? folder + "/" : "")
                     + UUID.randomUUID() + optimizedImage.extension();
-
             PutObjectRequest putObjectRequest = PutObjectRequest.builder()
                     .bucket(properties.bucket())
                     .key(filename)
                     .contentType(optimizedImage.contentType())
                     .cacheControl("public, max-age=31536000, immutable")
                     .build();
-
             s3Client.putObject(putObjectRequest, RequestBody.fromBytes(optimizedImage.data()));
-
             String publicUrl = properties.publicUrl();
             if (publicUrl.endsWith("/")) {
                 publicUrl = publicUrl.substring(0, publicUrl.length() - 1);
             }
-
             return publicUrl + "/" + filename;
-
         } catch (IOException e) {
             log.error("Failed to upload image to Cloudflare R2", e);
             throw new RuntimeException("Failed to upload file to storage", e);
@@ -91,7 +84,6 @@ public class S3StorageServiceImpl implements StorageService {
         if (source == null) {
             throw new IllegalArgumentException("Unsupported image format");
         }
-
         BufferedImage resized = resizeIfNeeded(source);
         BufferedImage rgb = new BufferedImage(resized.getWidth(), resized.getHeight(), BufferedImage.TYPE_INT_RGB);
         Graphics2D graphics = rgb.createGraphics();
@@ -102,7 +94,6 @@ public class S3StorageServiceImpl implements StorageService {
         graphics.fillRect(0, 0, rgb.getWidth(), rgb.getHeight());
         graphics.drawImage(resized, 0, 0, null);
         graphics.dispose();
-
         if (hasWebpWriter()) {
             try {
                 return new OptimizedImage(writeImage(rgb, "webp", WEBP_QUALITY), ".webp", "image/webp");
@@ -110,7 +101,6 @@ public class S3StorageServiceImpl implements StorageService {
                 log.warn("WebP encoding unavailable, falling back to JPEG: {}", ex.getMessage());
             }
         }
-
         return new OptimizedImage(writeImage(rgb, "jpeg", JPEG_QUALITY), ".jpg", "image/jpeg");
     }
 
@@ -120,11 +110,9 @@ public class S3StorageServiceImpl implements StorageService {
         if (width <= MAX_WIDTH && height <= MAX_HEIGHT) {
             return image;
         }
-
         double ratio = Math.min((double) MAX_WIDTH / width, (double) MAX_HEIGHT / height);
         int targetWidth = Math.max(1, (int) Math.round(width * ratio));
         int targetHeight = Math.max(1, (int) Math.round(height * ratio));
-
         BufferedImage output = new BufferedImage(targetWidth, targetHeight, BufferedImage.TYPE_INT_ARGB);
         Graphics2D graphics = output.createGraphics();
         graphics.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
@@ -139,7 +127,6 @@ public class S3StorageServiceImpl implements StorageService {
         if (!writers.hasNext()) {
             throw new IllegalStateException("No image writer available for format: " + format);
         }
-
         ImageWriter writer = writers.next();
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         try (ImageOutputStream imageOutputStream = ImageIO.createImageOutputStream(outputStream)) {

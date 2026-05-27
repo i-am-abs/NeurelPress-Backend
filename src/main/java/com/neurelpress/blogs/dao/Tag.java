@@ -1,27 +1,17 @@
 package com.neurelpress.blogs.dao;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Index;
-import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.NoArgsConstructor;
 import lombok.Builder;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.util.UUID;
 
-@Entity
-@Table(
-        name = "tags",
-        indexes = {
-                @Index(name = "idx_tag_slug", columnList = "slug", unique = true)
-        }
-)
+@Document(collection = "tags")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -30,18 +20,17 @@ import java.util.UUID;
 public class Tag {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+    @Builder.Default
+    private UUID id = UUID.randomUUID();
 
-    @Column(nullable = false, unique = true)
+    @Indexed(unique = true)
     private String name;
 
-    @Column(nullable = false, unique = true)
+    @Indexed(unique = true)
     private String slug;
 
     private String description;
 
-    @Column(nullable = false)
     @Builder.Default
     private int articleCount = 0;
 }

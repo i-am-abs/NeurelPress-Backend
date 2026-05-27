@@ -16,7 +16,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
@@ -24,17 +23,14 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
-
     private final UserRepository userRepository;
     private final ArticleRepository articleRepository;
     private final FollowService followService;
     private final UserMapper userMapper;
 
     @Override
-    @Transactional(readOnly = true)
     public UserResponse getProfileByUsername(String username) {
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new ResourceNotFoundException(CodeConstants.USER, CodeConstants.USERNAME, username));
+        User user = userRepository.findByUsername(username).orElseThrow(() -> new ResourceNotFoundException(CodeConstants.USER, CodeConstants.USERNAME, username));
         long publishedCount = articleRepository.countPublishedByAuthor(user.getId());
         long followersCount = followService.getFollowerCount(user.getId());
         long followingCount = followService.getFollowingCount(user.getId());
@@ -42,13 +38,8 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    @Transactional
-    public UserResponse updateProfile(UUID userId, String displayName, String headline, String bio,
-                                      String avatarUrl, String githubUrl,
-                                      String linkedinUrl, String websiteUrl, String techTags) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException(CodeConstants.USER, CodeConstants.ID, userId));
-
+    public UserResponse updateProfile(UUID userId, String displayName, String headline, String bio, String avatarUrl, String githubUrl, String linkedinUrl, String websiteUrl, String techTags) {
+        User user = userRepository.findById(userId).orElseThrow(() -> new ResourceNotFoundException(CodeConstants.USER, CodeConstants.ID, userId));
         if (displayName != null) {
             user.setDisplayName(displayName);
         }
@@ -77,7 +68,6 @@ public class UserServiceImpl implements UserService {
         if (techTags != null) {
             user.setTechTags(techTags);
         }
-
         user = userRepository.save(user);
         long publishedCount = articleRepository.countPublishedByAuthor(user.getId());
         long followersCount = followService.getFollowerCount(user.getId());
@@ -87,14 +77,12 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    @Transactional(readOnly = true)
     public long getPublishedArticleCount(UUID userId) {
         log.info("Getting published article count for user: {}", userId);
         return articleRepository.countPublishedByAuthor(userId);
     }
 
     @Override
-    @Transactional(readOnly = true)
     public PageResponse<UserResponse> searchUsers(String query, int page, int size) {
         log.info("Searching users with query: {} (page {}, size {})", query, page, size);
         Page<User> p = userRepository.search(query, Pageable.ofSize(size).withPage(page));

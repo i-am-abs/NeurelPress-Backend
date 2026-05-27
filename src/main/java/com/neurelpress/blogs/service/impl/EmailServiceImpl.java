@@ -18,7 +18,6 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 public class EmailServiceImpl implements EmailService {
-
     private final JavaMailSender mailSender;
     private final NeuralPressMailProperties mailProperties;
     private final NeuralPressCorsProperties corsProperties;
@@ -95,12 +94,10 @@ public class EmailServiceImpl implements EmailService {
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-
             helper.setFrom(mailProperties.from());
             helper.setTo(to);
             helper.setSubject(subject);
             helper.setText(html, true);
-
             mailSender.send(message);
             log.debug("Email sent to {}", to);
         } catch (MessagingException | MailException e) {

@@ -1,21 +1,16 @@
 package com.neurelpress.blogs.dao;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.NoArgsConstructor;
 import lombok.Builder;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.util.UUID;
 
-@Entity
-@Table(name = "quotes")
+@Document(collection = "quotes")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -24,18 +19,15 @@ import java.util.UUID;
 public class Quote {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+    @Builder.Default
+    private UUID id = UUID.randomUUID();
 
-    @Column(nullable = false, columnDefinition = "TEXT")
     private String text;
 
-    @Column(nullable = false)
     private String author;
 
     private String source;
 
-    @Column(nullable = false)
     @Builder.Default
     private boolean active = true;
 }

@@ -2,7 +2,11 @@ package com.neurelpress.blogs.service.impl;
 
 import com.neurelpress.blogs.constants.ArticleStatus;
 import com.neurelpress.blogs.constants.CodeConstants;
-import com.neurelpress.blogs.dao.*;
+import com.neurelpress.blogs.dao.Article;
+import com.neurelpress.blogs.dao.ArticleClap;
+import com.neurelpress.blogs.dao.Tag;
+import com.neurelpress.blogs.dao.User;
+import com.neurelpress.blogs.dao.Book;
 import com.neurelpress.blogs.dto.request.ArticleRequest;
 import com.neurelpress.blogs.dto.response.ArticleResponse;
 import com.neurelpress.blogs.dto.response.ArticleSummaryResponse;
@@ -10,7 +14,11 @@ import com.neurelpress.blogs.dto.response.PageResponse;
 import com.neurelpress.blogs.exception.ResourceNotFoundException;
 import com.neurelpress.blogs.exception.UnauthorizedException;
 import com.neurelpress.blogs.mapper.ArticleMapper;
-import com.neurelpress.blogs.repository.*;
+import com.neurelpress.blogs.repository.ArticleClapRepository;
+import com.neurelpress.blogs.repository.ArticleRepository;
+import com.neurelpress.blogs.repository.TagRepository;
+import com.neurelpress.blogs.repository.UserRepository;
+import com.neurelpress.blogs.repository.BookRepository;
 import com.neurelpress.blogs.service.AiSuggestionsService;
 import com.neurelpress.blogs.service.ArticleService;
 import com.neurelpress.blogs.service.BookmarkService;
@@ -23,7 +31,6 @@ import org.jspecify.annotations.NonNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.HashSet;
@@ -36,9 +43,7 @@ import static com.neurelpress.blogs.constants.CodeConstants.WORDS_PER_MINUTE;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class ArticleServiceImpl implements ArticleService {
-
     private final ArticleRepository articleRepository;
     private final ArticleClapRepository articleClapRepository;
     private final UserRepository userRepository;
@@ -59,23 +64,19 @@ public class ArticleServiceImpl implements ArticleService {
     }
 
     @Override
-    @Transactional
     public ArticleResponse createArticle(UUID authorId, @NonNull ArticleRequest request) {
         User author = findUserById(authorId);
         String slug = uniqueSlug(SlugUtils.toSlug(request.title()));
         Article article = buildDraftArticle(author, slug, request);
-
         article = articleRepository.save(article);
         log.info("Created new article: {}", article.getSlug());
         return articleMapper.toResponse(article);
     }
 
     @Override
-    @Transactional
     public ArticleResponse updateArticle(UUID authorId, String slug, @NonNull ArticleRequest request) {
         Article article = findArticleBySlug(slug);
         ensureAuthorOwnership(authorId, article, "update");
-
         article.setTitle(request.title());
         article.setSummary(request.summary());
         article.setContent(request.content());
@@ -86,18 +87,15 @@ public class ArticleServiceImpl implements ArticleService {
         article.setReadTime(computeReadTime(request.content()));
         article.setTags(resolveTags(request.tagSlugs()));
         article.setBooks(resolveBooks(request.bookIds()));
-
         article = articleRepository.save(article);
         log.info("Updated article: {}", article.getSlug());
         return articleMapper.toResponse(article);
     }
 
     @Override
-    @Transactional
     public ArticleResponse publishArticle(UUID authorId, String slug) {
         Article article = findArticleBySlug(slug);
         ensureAuthorOwnership(authorId, article, "publish");
-
         if (article.getTags().isEmpty() && article.getContent() != null && !article.getContent().isBlank()) {
             try {
                 var suggestedSlugs = aiSuggestionsService.suggestTags(article.getTitle(), article.getContent());
@@ -113,7 +111,6 @@ public class ArticleServiceImpl implements ArticleService {
                 log.warn("AI tag suggestion failed for article {}: {}", slug, e.getMessage());
             }
         }
-
         article.setStatus(ArticleStatus.PUBLISHED);
         article.setPublishedAt(Instant.now());
         article = articleRepository.save(article);
@@ -122,7 +119,6 @@ public class ArticleServiceImpl implements ArticleService {
     }
 
     @Override
-    @Transactional(readOnly = true)
     public ArticleResponse getArticleBySlug(UUID viewerId, String slug) {
         if (viewerId == null) {
             Article published = articleRepository.findPublishedBySlug(slug)
@@ -130,22 +126,18 @@ public class ArticleServiceImpl implements ArticleService {
             log.info("Article viewed: {}", slug);
             return articleMapper.toResponse(published, null);
         }
-
         Article article = articleRepository.findBySlug(slug)
                 .orElseThrow(() -> new ResourceNotFoundException(CodeConstants.Article, CodeConstants.SLUG, slug));
-
         if (article.getStatus() != ArticleStatus.PUBLISHED
                 && !article.getAuthor().getId().equals(viewerId)) {
             throw new ResourceNotFoundException(CodeConstants.Article, CodeConstants.SLUG, slug);
         }
-
         Boolean bookmarked = bookmarkService.isBookmarked(viewerId, article.getId());
         log.info("Article viewed: {}", slug);
         return articleMapper.toResponse(article, bookmarked);
     }
 
     @Override
-    @Transactional
     public void recordView(String slug) {
         articleRepository.findBySlug(slug)
                 .ifPresent(a -> articleRepository.incrementViews(a.getId()));
@@ -153,7 +145,6 @@ public class ArticleServiceImpl implements ArticleService {
     }
 
     @Override
-    @Transactional(readOnly = true)
     public PageResponse<ArticleSummaryResponse> getPublishedArticles(int page, int size) {
         Page<Article> p = articleRepository.findByStatusOrderByPublishedAtDesc(
                 ArticleStatus.PUBLISHED, Pageable.ofSize(size).withPage(page));
@@ -162,7 +153,6 @@ public class ArticleServiceImpl implements ArticleService {
     }
 
     @Override
-    @Transactional(readOnly = true)
     public PageResponse<ArticleSummaryResponse> getArticlesByTag(String tagSlug, int page, int size) {
         Page<Article> p = articleRepository.findByTagSlug(tagSlug, Pageable.ofSize(size).withPage(page));
         log.info("Getting articles by tag {} with page {} and size {}", tagSlug, page, size);
@@ -170,7 +160,6 @@ public class ArticleServiceImpl implements ArticleService {
     }
 
     @Override
-    @Transactional(readOnly = true)
     public PageResponse<ArticleSummaryResponse> getArticlesByAuthor(UUID authorId, int page, int size) {
         Page<Article> p = articleRepository.findByAuthorIdAndStatusOrderByCreatedAtDesc(
                 authorId, ArticleStatus.PUBLISHED, Pageable.ofSize(size).withPage(page));
@@ -179,7 +168,6 @@ public class ArticleServiceImpl implements ArticleService {
     }
 
     @Override
-    @Transactional(readOnly = true)
     public PageResponse<ArticleSummaryResponse> getDraftsByAuthor(UUID authorId, int page, int size) {
         Page<Article> p = articleRepository.findByAuthorIdAndStatusOrderByCreatedAtDesc(
                 authorId, ArticleStatus.DRAFT, Pageable.ofSize(size).withPage(page));
@@ -188,7 +176,6 @@ public class ArticleServiceImpl implements ArticleService {
     }
 
     @Override
-    @Transactional(readOnly = true)
     public PageResponse<ArticleSummaryResponse> getArticlesByAuthorAllStatus(UUID authorId, int page, int size) {
         Page<Article> p = articleRepository.findByAuthorIdOrderByCreatedAtDesc(authorId, Pageable.ofSize(size).withPage(page));
         log.info("Getting all articles by author {} with page {} and size {}", authorId, page, size);
@@ -196,7 +183,6 @@ public class ArticleServiceImpl implements ArticleService {
     }
 
     @Override
-    @Transactional
     public void deleteArticle(UUID authorId, String slug) {
         Article article = findArticleBySlug(slug);
         ensureAuthorOwnership(authorId, article, "delete");
@@ -204,7 +190,6 @@ public class ArticleServiceImpl implements ArticleService {
     }
 
     @Override
-    @Transactional
     public void clapArticle(UUID userId, String slug) {
         Article article = articleRepository.findPublishedBySlug(slug)
                 .orElseThrow(() -> new ResourceNotFoundException(CodeConstants.Article, CodeConstants.SLUG, slug));

@@ -1,29 +1,21 @@
 package com.neurelpress.blogs.dao;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.Index;
-import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.NoArgsConstructor;
 import lombok.Builder;
-import org.hibernate.annotations.CreationTimestamp;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
+import org.springframework.data.mongodb.core.mapping.DBRef;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
 import java.util.UUID;
 
-@Entity
-@Table(name = "article_claps",
-        uniqueConstraints = @UniqueConstraint(name = "uk_clap_user_article", columnNames = {"user_id", "article_id"}),
-        indexes = {@Index(name = "idx_clap_article", columnList = "article_id")})
+@Document(collection = "article_claps")
+@CompoundIndex(name = "uk_clap_user_article", def = "{'user.$id': 1, 'article.$id': 1}", unique = true)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -32,17 +24,15 @@ import java.util.UUID;
 public class ArticleClap {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+    @Builder.Default
+    private UUID id = UUID.randomUUID();
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
+    @DBRef
     private User user;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "article_id", nullable = false)
+    @DBRef
     private Article article;
 
-    @CreationTimestamp
+    @CreatedDate
     private Instant createdAt;
 }

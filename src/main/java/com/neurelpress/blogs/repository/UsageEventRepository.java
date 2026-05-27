@@ -1,9 +1,8 @@
 package com.neurelpress.blogs.repository;
 
 import com.neurelpress.blogs.dao.UsageEvent;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
+import org.springframework.data.mongodb.repository.Aggregation;
+import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
@@ -11,11 +10,15 @@ import java.util.List;
 import java.util.UUID;
 
 @Repository
-public interface UsageEventRepository extends JpaRepository<UsageEvent, UUID> {
+public interface UsageEventRepository extends MongoRepository<UsageEvent, UUID> {
 
-    @Query("SELECT u.eventName as name, COUNT(u) as count FROM UsageEvent u " +
-            "WHERE u.createdAt >= :since GROUP BY u.eventName ORDER BY COUNT(u) DESC")
-    List<EventCount> countByEventSince(@Param("since") Instant since);
+    @Aggregation(pipeline = {
+            "{ '$match': { 'createdAt': { '$gte': ?0 } } }",
+            "{ '$group': { '_id': '$eventName', 'count': { '$sum': 1 } } }",
+            "{ '$sort': { 'count': -1 } }",
+            "{ '$project': { '_id': 0, 'name': '$_id', 'count': 1 } }"
+    })
+    List<EventCount> countByEventSince(Instant since);
 
     long countByCreatedAtAfter(Instant since);
 

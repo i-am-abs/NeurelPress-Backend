@@ -2,39 +2,24 @@ package com.neurelpress.blogs.dao;
 
 import com.neurelpress.blogs.constants.AuthProvider;
 import com.neurelpress.blogs.constants.UserRole;
-import jakarta.persistence.Column;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.Index;
-import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.NoArgsConstructor;
 import lombok.Builder;
 import lombok.ToString;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
+import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.UUID;
 
-@Entity
-@Table(
-        name = "users",
-        indexes = {
-                @Index(name = "idx_user_username", columnList = "username", unique = true),
-                @Index(name = "idx_user_email", columnList = "email", unique = true)
-        }
-)
+@Document(collection = "users")
+@CompoundIndex(name = "idx_user_provider_provider_id", def = "{'provider': 1, 'providerId': 1}")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -44,48 +29,39 @@ import java.util.UUID;
 public class User {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+    @Builder.Default
+    private UUID id = UUID.randomUUID();
 
-    @Column(nullable = false, unique = true)
+    @Indexed(unique = true)
     private String username;
 
-    @Column(nullable = false, unique = true, updatable = false)
+    @Indexed(unique = true)
     private String email;
 
     private String passwordHash;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
     @Builder.Default
     private AuthProvider provider = AuthProvider.LOCAL;
 
     private String providerId;
 
-    @Column(columnDefinition = "TEXT")
     private String bio;
 
     private String headline;
     private String avatarUrl;
     private String displayName;
 
-    @Column(length = 500)
     private String techTags;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
     @Builder.Default
     private UserRole role = UserRole.USER;
 
-    @Column(nullable = false)
     @Builder.Default
     private boolean verified = false;
 
-    @Column(nullable = false)
     @Builder.Default
     private int followersCount = 0;
 
-    @Column(nullable = false)
     @Builder.Default
     private int followingCount = 0;
 
@@ -93,18 +69,13 @@ public class User {
     private String linkedinUrl;
     private String websiteUrl;
 
-    @OneToMany(mappedBy = "author", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    private Set<Article> articles = new HashSet<>();
-
-    @CreationTimestamp
+    @CreatedDate
     private Instant createdAt;
 
-    @UpdateTimestamp
+    @LastModifiedDate
     private Instant updatedAt;
 
     private Instant lastSignInAt;
 
-    @Enumerated(EnumType.STRING)
     private AuthProvider lastSignInVia;
 }
